@@ -1,3 +1,14 @@
+---
+layout: post
+title:  "DACON 구내식당 식수예측"
+author: "Chester"
+comments: true
+tags: Tale
+excerpt_separator: <!--more-->
+sticky: true
+hidden: true
+---
+
 # EDA, 모델 수정2
 
 ## 0.준비
