@@ -1,0 +1,5347 @@
+# EDA, 모델 수정2
+
+## 0.준비
+- 한글 폰트 적용
+  - 아래 셀 실행 후 런타임 다시 시작 런타임 모두 실행
+
+
+```python
+!sudo apt-get install -y fonts-nanum
+!sudo fc-cache -fv]
+!rm ~/.cache/matplotlib -rf
+
+```
+
+    Reading package lists... Done
+    Building dependency tree       
+    Reading state information... Done
+    fonts-nanum is already the newest version (20170925-1).
+    The following package was automatically installed and is no longer required:
+      libnvidia-common-460
+    Use 'sudo apt autoremove' to remove it.
+    0 upgraded, 0 newly installed, 0 to remove and 62 not upgraded.
+    fc-cache: invalid option -- ']'
+    usage: fc-cache [-EfrsvVh] [-y SYSROOT] [--error-on-no-fonts] [--force|--really-force] [--sysroot=SYSROOT] [--system-only] [--verbose] [--version] [--help] [dirs]
+    Build font information caches in [dirs]
+    (all directories in font configuration by default).
+    
+      -E, --error-on-no-fonts  raise an error if no fonts in a directory
+      -f, --force              scan directories with apparently valid caches
+      -r, --really-force       erase all existing caches, then rescan
+      -s, --system-only        scan system-wide directories only
+      -y, --sysroot=SYSROOT    prepend SYSROOT to all paths for scanning
+      -v, --verbose            display status information while busy
+      -V, --version            display font config version and exit
+      -h, --help               display this help and exit
+    
+
+- 라이브러리
+
+
+```python
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+plt.rc('font', family = 'NanumBarunGothic')
+
+from google.colab import drive
+drive.mount('/content/drive')
+```
+
+    Drive already mounted at /content/drive; to attempt to forcibly remount, call drive.mount("/content/drive", force_remount=True).
+    
+
+- 데이터로드
+
+
+```python
+train = pd.read_csv('/content/drive/MyDrive/구내식당/train.csv')
+test = pd.read_csv('/content/drive/MyDrive/구내식당/test.csv')
+submission = pd.read_csv('/content/drive/MyDrive/구내식당/sample_submission.csv')
+```
+
+
+```python
+train.head(1)
+```
+
+
+
+
+
+  <div id="df-27eda170-92d1-4d75-be57-d3ff4f1eb8ce">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>일자</th>
+      <th>요일</th>
+      <th>본사정원수</th>
+      <th>본사휴가자수</th>
+      <th>본사출장자수</th>
+      <th>본사시간외근무명령서승인건수</th>
+      <th>현본사소속재택근무자수</th>
+      <th>조식메뉴</th>
+      <th>중식메뉴</th>
+      <th>석식메뉴</th>
+      <th>중식계</th>
+      <th>석식계</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2016-02-01</td>
+      <td>월</td>
+      <td>2601</td>
+      <td>50</td>
+      <td>150</td>
+      <td>238</td>
+      <td>0.0</td>
+      <td>모닝롤/찐빵  우유/두유/주스 계란후라이  호두죽/쌀밥 (쌀:국내산) 된장찌개  쥐...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 오징어찌개  쇠불고기 (쇠고기:호주산) 계란찜 ...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 육개장  자반고등어구이  두부조림  건파래무침 ...</td>
+      <td>1039.0</td>
+      <td>331.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-27eda170-92d1-4d75-be57-d3ff4f1eb8ce')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-27eda170-92d1-4d75-be57-d3ff4f1eb8ce button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-27eda170-92d1-4d75-be57-d3ff4f1eb8ce');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+
+
+
+
+
+```python
+test.head(1)
+```
+
+
+
+
+
+  <div id="df-cef0ccb0-6b48-443e-931f-9e8cc2f4fc5e">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>일자</th>
+      <th>요일</th>
+      <th>본사정원수</th>
+      <th>본사휴가자수</th>
+      <th>본사출장자수</th>
+      <th>본사시간외근무명령서승인건수</th>
+      <th>현본사소속재택근무자수</th>
+      <th>조식메뉴</th>
+      <th>중식메뉴</th>
+      <th>석식메뉴</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2021-01-27</td>
+      <td>수</td>
+      <td>2983</td>
+      <td>88</td>
+      <td>182</td>
+      <td>5</td>
+      <td>358.0</td>
+      <td>모닝롤/연유버터베이글 우유/주스 계란후라이/찐계란 단호박죽/흑미밥 우거지국 고기완자...</td>
+      <td>쌀밥/흑미밥/찰현미밥 대구지리 매운돈갈비찜 오꼬노미계란말이 상추무침 포기김치 양상추...</td>
+      <td>흑미밥 얼큰순두부찌개 쇠고기우엉볶음 버섯햄볶음 (New)아삭이고추무절임 포기김치</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-cef0ccb0-6b48-443e-931f-9e8cc2f4fc5e')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-cef0ccb0-6b48-443e-931f-9e8cc2f4fc5e button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-cef0ccb0-6b48-443e-931f-9e8cc2f4fc5e');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+
+
+
+
+
+```python
+submission.head(1)
+```
+
+
+
+
+
+  <div id="df-cd289f7a-bbcd-4a83-937b-7bc772b5d0ba">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>일자</th>
+      <th>중식계</th>
+      <th>석식계</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2021-01-27</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-cd289f7a-bbcd-4a83-937b-7bc772b5d0ba')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-cd289f7a-bbcd-4a83-937b-7bc772b5d0ba button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-cd289f7a-bbcd-4a83-937b-7bc772b5d0ba');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+
+
+
+
+- 데이터 전처리
+  - train
+
+
+```python
+# 석식 이용 인원 0인 날 삭제
+train = train[train['석식계'] != 0]
+
+#요일 숫자로 변경
+train.loc[train['요일'] == '월', '요일'] = 1
+train.loc[train['요일'] == '화', '요일'] = 2
+train.loc[train['요일'] == '수', '요일'] = 3
+train.loc[train['요일'] == '목', '요일'] = 4
+train.loc[train['요일'] == '금', '요일'] = 5
+
+#월 칼럼 추가
+def month(text:str):
+  return int(text[5:7])
+train['월'] = train['일자'].map(month)
+
+#일 칼럼 추가
+def day(text:str):
+  return int(text[8:10])
+train['일'] = train['일자'].map(day)
+
+
+train.head()
+```
+
+    /usr/local/lib/python3.7/dist-packages/pandas/core/indexing.py:1817: SettingWithCopyWarning: 
+    A value is trying to be set on a copy of a slice from a DataFrame.
+    Try using .loc[row_indexer,col_indexer] = value instead
+    
+    See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+      self._setitem_single_column(loc, value, pi)
+    /usr/local/lib/python3.7/dist-packages/ipykernel_launcher.py:14: SettingWithCopyWarning: 
+    A value is trying to be set on a copy of a slice from a DataFrame.
+    Try using .loc[row_indexer,col_indexer] = value instead
+    
+    See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+      
+    /usr/local/lib/python3.7/dist-packages/ipykernel_launcher.py:19: SettingWithCopyWarning: 
+    A value is trying to be set on a copy of a slice from a DataFrame.
+    Try using .loc[row_indexer,col_indexer] = value instead
+    
+    See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+    
+
+
+
+
+
+  <div id="df-7786df36-21d6-4e8f-8528-c1f2aea6b209">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>일자</th>
+      <th>요일</th>
+      <th>본사정원수</th>
+      <th>본사휴가자수</th>
+      <th>본사출장자수</th>
+      <th>본사시간외근무명령서승인건수</th>
+      <th>현본사소속재택근무자수</th>
+      <th>조식메뉴</th>
+      <th>중식메뉴</th>
+      <th>석식메뉴</th>
+      <th>중식계</th>
+      <th>석식계</th>
+      <th>월</th>
+      <th>일</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2016-02-01</td>
+      <td>1</td>
+      <td>2601</td>
+      <td>50</td>
+      <td>150</td>
+      <td>238</td>
+      <td>0.0</td>
+      <td>모닝롤/찐빵  우유/두유/주스 계란후라이  호두죽/쌀밥 (쌀:국내산) 된장찌개  쥐...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 오징어찌개  쇠불고기 (쇠고기:호주산) 계란찜 ...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 육개장  자반고등어구이  두부조림  건파래무침 ...</td>
+      <td>1039.0</td>
+      <td>331.0</td>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2016-02-02</td>
+      <td>2</td>
+      <td>2601</td>
+      <td>50</td>
+      <td>173</td>
+      <td>319</td>
+      <td>0.0</td>
+      <td>모닝롤/단호박샌드  우유/두유/주스 계란후라이  팥죽/쌀밥 (쌀:국내산) 호박젓국찌...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 김치찌개  가자미튀김  모둠소세지구이  마늘쫑무...</td>
+      <td>콩나물밥*양념장 (쌀,현미흑미:국내산) 어묵국  유산슬 (쇠고기:호주산) 아삭고추무...</td>
+      <td>867.0</td>
+      <td>560.0</td>
+      <td>2</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2016-02-03</td>
+      <td>3</td>
+      <td>2601</td>
+      <td>56</td>
+      <td>180</td>
+      <td>111</td>
+      <td>0.0</td>
+      <td>모닝롤/베이글  우유/두유/주스 계란후라이  표고버섯죽/쌀밥 (쌀:국내산) 콩나물국...</td>
+      <td>카레덮밥 (쌀,현미흑미:국내산) 팽이장국  치킨핑거 (닭고기:국내산) 쫄면야채무침 ...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 청국장찌개  황태양념구이 (황태:러시아산) 고기...</td>
+      <td>1017.0</td>
+      <td>573.0</td>
+      <td>2</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2016-02-04</td>
+      <td>4</td>
+      <td>2601</td>
+      <td>104</td>
+      <td>220</td>
+      <td>355</td>
+      <td>0.0</td>
+      <td>모닝롤/토마토샌드  우유/두유/주스 계란후라이  닭죽/쌀밥 (쌀,닭:국내산) 근대국...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 쇠고기무국  주꾸미볶음  부추전  시금치나물  ...</td>
+      <td>미니김밥*겨자장 (쌀,현미흑미:국내산) 우동  멕시칸샐러드  군고구마  무피클  포...</td>
+      <td>978.0</td>
+      <td>525.0</td>
+      <td>2</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2016-02-05</td>
+      <td>5</td>
+      <td>2601</td>
+      <td>278</td>
+      <td>181</td>
+      <td>34</td>
+      <td>0.0</td>
+      <td>모닝롤/와플  우유/두유/주스 계란후라이  쇠고기죽/쌀밥 (쌀:국내산) 재첩국  방...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 떡국  돈육씨앗강정 (돼지고기:국내산) 우엉잡채...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 차돌박이찌개 (쇠고기:호주산) 닭갈비 (닭고기:...</td>
+      <td>925.0</td>
+      <td>330.0</td>
+      <td>2</td>
+      <td>5</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-7786df36-21d6-4e8f-8528-c1f2aea6b209')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-7786df36-21d6-4e8f-8528-c1f2aea6b209 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-7786df36-21d6-4e8f-8528-c1f2aea6b209');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+
+
+
+
+
+```python
+#요일 숫자로 변경
+test.loc[test['요일'] == '월', '요일'] = 1
+test.loc[test['요일'] == '화', '요일'] = 2
+test.loc[test['요일'] == '수', '요일'] = 3
+test.loc[test['요일'] == '목', '요일'] = 4
+test.loc[test['요일'] == '금', '요일'] = 5
+
+#월 칼럼 추가
+def month(text:str):
+  return int(text[5:7])
+test['월'] = test['일자'].map(month)
+
+#일 칼럼 추가
+def day(text:str):
+  return int(text[8:10])
+test['일'] = test['일자'].map(day)
+
+
+test.head()
+
+test.head()
+```
+
+
+
+
+
+  <div id="df-82dcea1b-d623-4ab3-ac25-bfeedf80a6a9">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>일자</th>
+      <th>요일</th>
+      <th>본사정원수</th>
+      <th>본사휴가자수</th>
+      <th>본사출장자수</th>
+      <th>본사시간외근무명령서승인건수</th>
+      <th>현본사소속재택근무자수</th>
+      <th>조식메뉴</th>
+      <th>중식메뉴</th>
+      <th>석식메뉴</th>
+      <th>월</th>
+      <th>일</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2021-01-27</td>
+      <td>3</td>
+      <td>2983</td>
+      <td>88</td>
+      <td>182</td>
+      <td>5</td>
+      <td>358.0</td>
+      <td>모닝롤/연유버터베이글 우유/주스 계란후라이/찐계란 단호박죽/흑미밥 우거지국 고기완자...</td>
+      <td>쌀밥/흑미밥/찰현미밥 대구지리 매운돈갈비찜 오꼬노미계란말이 상추무침 포기김치 양상추...</td>
+      <td>흑미밥 얼큰순두부찌개 쇠고기우엉볶음 버섯햄볶음 (New)아삭이고추무절임 포기김치</td>
+      <td>1</td>
+      <td>27</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2021-01-28</td>
+      <td>4</td>
+      <td>2983</td>
+      <td>104</td>
+      <td>212</td>
+      <td>409</td>
+      <td>348.0</td>
+      <td>모닝롤/대만샌드위치 우유/주스 계란후라이/찐계란 누룽지탕/흑미밥 황태국 시래기지짐 ...</td>
+      <td>쌀밥/보리밥/찰현미밥 우렁된장찌개 오리주물럭 청양부추전 수제삼색무쌈 겉절이김치 양상...</td>
+      <td>충무김밥 우동국물 오징어무침 꽃맛살샐러드 얼갈이쌈장무침 석박지</td>
+      <td>1</td>
+      <td>28</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2021-01-29</td>
+      <td>5</td>
+      <td>2983</td>
+      <td>270</td>
+      <td>249</td>
+      <td>0</td>
+      <td>294.0</td>
+      <td>모닝롤/핫케익 우유/주스 계란후라이/찐계란 오곡죽/흑미밥 매생이굴국 고구마순볶음 양...</td>
+      <td>쌀밥/흑미밥/찰현미밥 팽이장국 수제돈까스*소스 가자미조림 동초나물무침 포기김치 양상...</td>
+      <td>흑미밥 물만둣국 카레찜닭 숯불양념꼬지어묵 꼬시래기무침 포기김치</td>
+      <td>1</td>
+      <td>29</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2021-02-01</td>
+      <td>1</td>
+      <td>2924</td>
+      <td>108</td>
+      <td>154</td>
+      <td>538</td>
+      <td>322.0</td>
+      <td>모닝롤/촉촉한치즈케익 우유/주스 계란후라이/찐계란 누룽지탕/흑미밥 두부김칫국 새우완...</td>
+      <td>쌀밥/흑미밥/찰현미밥 배추들깨국 오리대패불고기 시금치프리타타 부추고추장무침 포기김치...</td>
+      <td>흑미밥 동태탕 돈육꽈리고추장조림 당면채소무침 모자반무침 포기김치</td>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2021-02-02</td>
+      <td>2</td>
+      <td>2924</td>
+      <td>62</td>
+      <td>186</td>
+      <td>455</td>
+      <td>314.0</td>
+      <td>모닝롤/토마토샌드 우유/주스 계란후라이/찐계란 채소죽/흑미밥 호박맑은국 오이생채 양...</td>
+      <td>쌀밥/팥밥/찰현미밥 부대찌개 닭살데리야끼조림 버섯탕수 세발나물무침 알타리김치/사과푸...</td>
+      <td>흑미밥 바지락살국 쇠고기청경채볶음 두부구이*볶은김치 머위된장무침 백김치</td>
+      <td>2</td>
+      <td>2</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-82dcea1b-d623-4ab3-ac25-bfeedf80a6a9')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-82dcea1b-d623-4ab3-ac25-bfeedf80a6a9 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-82dcea1b-d623-4ab3-ac25-bfeedf80a6a9');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+
+
+
+
+## 1.EDA
+
+### 1)feature를 주인공으로
+
+
+```python
+train
+train[['본사정원수']].plot(figsize = (15, 5))
+plt.show()
+
+train[['본사휴가자수']].plot(figsize = (15, 5))
+plt.show()
+
+train[['본사출장자수']].plot(figsize = (15, 5))
+plt.show()
+
+train[['본사시간외근무명령서승인건수']].plot(figsize = (15, 5))
+plt.show()
+
+train[['현본사소속재택근무자수']].plot(figsize = (15, 5))
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_15_0.png)
+    
+
+
+
+    
+![png](220711_dacon_files/220711_dacon_15_1.png)
+    
+
+
+
+    
+![png](220711_dacon_files/220711_dacon_15_2.png)
+    
+
+
+
+    
+![png](220711_dacon_files/220711_dacon_15_3.png)
+    
+
+
+
+    
+![png](220711_dacon_files/220711_dacon_15_4.png)
+    
+
+
+#### a)재택근무 발생 원인
+- 코로나의 영향
+
+
+```python
+train[train['현본사소속재택근무자수'] == 0]
+```
+
+
+
+
+
+  <div id="df-629b6849-f7d1-4ad6-80f0-15fc655efd52">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>일자</th>
+      <th>요일</th>
+      <th>본사정원수</th>
+      <th>본사휴가자수</th>
+      <th>본사출장자수</th>
+      <th>본사시간외근무명령서승인건수</th>
+      <th>현본사소속재택근무자수</th>
+      <th>조식메뉴</th>
+      <th>중식메뉴</th>
+      <th>석식메뉴</th>
+      <th>중식계</th>
+      <th>석식계</th>
+      <th>월</th>
+      <th>일</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2016-02-01</td>
+      <td>1</td>
+      <td>2601</td>
+      <td>50</td>
+      <td>150</td>
+      <td>238</td>
+      <td>0.0</td>
+      <td>모닝롤/찐빵  우유/두유/주스 계란후라이  호두죽/쌀밥 (쌀:국내산) 된장찌개  쥐...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 오징어찌개  쇠불고기 (쇠고기:호주산) 계란찜 ...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 육개장  자반고등어구이  두부조림  건파래무침 ...</td>
+      <td>1039.0</td>
+      <td>331.0</td>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2016-02-02</td>
+      <td>2</td>
+      <td>2601</td>
+      <td>50</td>
+      <td>173</td>
+      <td>319</td>
+      <td>0.0</td>
+      <td>모닝롤/단호박샌드  우유/두유/주스 계란후라이  팥죽/쌀밥 (쌀:국내산) 호박젓국찌...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 김치찌개  가자미튀김  모둠소세지구이  마늘쫑무...</td>
+      <td>콩나물밥*양념장 (쌀,현미흑미:국내산) 어묵국  유산슬 (쇠고기:호주산) 아삭고추무...</td>
+      <td>867.0</td>
+      <td>560.0</td>
+      <td>2</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2016-02-03</td>
+      <td>3</td>
+      <td>2601</td>
+      <td>56</td>
+      <td>180</td>
+      <td>111</td>
+      <td>0.0</td>
+      <td>모닝롤/베이글  우유/두유/주스 계란후라이  표고버섯죽/쌀밥 (쌀:국내산) 콩나물국...</td>
+      <td>카레덮밥 (쌀,현미흑미:국내산) 팽이장국  치킨핑거 (닭고기:국내산) 쫄면야채무침 ...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 청국장찌개  황태양념구이 (황태:러시아산) 고기...</td>
+      <td>1017.0</td>
+      <td>573.0</td>
+      <td>2</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2016-02-04</td>
+      <td>4</td>
+      <td>2601</td>
+      <td>104</td>
+      <td>220</td>
+      <td>355</td>
+      <td>0.0</td>
+      <td>모닝롤/토마토샌드  우유/두유/주스 계란후라이  닭죽/쌀밥 (쌀,닭:국내산) 근대국...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 쇠고기무국  주꾸미볶음  부추전  시금치나물  ...</td>
+      <td>미니김밥*겨자장 (쌀,현미흑미:국내산) 우동  멕시칸샐러드  군고구마  무피클  포...</td>
+      <td>978.0</td>
+      <td>525.0</td>
+      <td>2</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2016-02-05</td>
+      <td>5</td>
+      <td>2601</td>
+      <td>278</td>
+      <td>181</td>
+      <td>34</td>
+      <td>0.0</td>
+      <td>모닝롤/와플  우유/두유/주스 계란후라이  쇠고기죽/쌀밥 (쌀:국내산) 재첩국  방...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 떡국  돈육씨앗강정 (돼지고기:국내산) 우엉잡채...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 차돌박이찌개 (쇠고기:호주산) 닭갈비 (닭고기:...</td>
+      <td>925.0</td>
+      <td>330.0</td>
+      <td>2</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>988</th>
+      <td>2020-02-19</td>
+      <td>3</td>
+      <td>2872</td>
+      <td>62</td>
+      <td>224</td>
+      <td>1</td>
+      <td>0.0</td>
+      <td>모닝롤/단팥빵  우유/주스 계란후라이 누룽지탕/쌀밥 (쌀:국내산) 오징어국 (오징어...</td>
+      <td>나물비빔밥 (쌀:국내산) 미소장국  사과고구마그라탕  메밀전병만두  도라지오이생채 ...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미,흑미:국내산) 순두부찌개 (순두부:중국산) 해물누룽지탕 (오...</td>
+      <td>930.0</td>
+      <td>434.0</td>
+      <td>2</td>
+      <td>19</td>
+    </tr>
+    <tr>
+      <th>989</th>
+      <td>2020-02-20</td>
+      <td>4</td>
+      <td>2872</td>
+      <td>78</td>
+      <td>254</td>
+      <td>549</td>
+      <td>0.0</td>
+      <td>모닝롤/참치샌드  우유/주스 계란후라이 새우살죽/쌀밥 (쌀:국내산) 감자국  볼어묵...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미,흑미:국내산) 근대국  간장마늘치킨 (닭:국내산) 오징어초무...</td>
+      <td>파인애플볶음밥 (쌀:국내산) 맑은국  새우까스*와사비소스  메추리알조림  오복지무침...</td>
+      <td>826.0</td>
+      <td>542.0</td>
+      <td>2</td>
+      <td>20</td>
+    </tr>
+    <tr>
+      <th>990</th>
+      <td>2020-02-21</td>
+      <td>5</td>
+      <td>2872</td>
+      <td>181</td>
+      <td>277</td>
+      <td>0</td>
+      <td>0.0</td>
+      <td>모닝롤/마늘빵  우유/주스 계란후라이 팥죽/쌀밥 (쌀:국내산) 버섯매운탕 (쇠고기:...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미,흑미:국내산) 들깨미역국  짬뽕불고기 (돈육:국내산) 새송이...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미,흑미:국내산) 닭개장 (닭:국내산) 고등어구이 (고등어:국내...</td>
+      <td>627.0</td>
+      <td>380.0</td>
+      <td>2</td>
+      <td>21</td>
+    </tr>
+    <tr>
+      <th>991</th>
+      <td>2020-02-24</td>
+      <td>1</td>
+      <td>2872</td>
+      <td>144</td>
+      <td>156</td>
+      <td>846</td>
+      <td>0.0</td>
+      <td>모닝롤/시금치팬케익  우유/주스 계란후라이 누룽지탕/쌀밥 (쌀:국내산) 민물새우찌개...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미,흑미:국내산) 된장찌개  돈육김치볶음 (돈육:국내산) 계란찜...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미,흑미:국내산) 소고기무국 (소고기:호주산) 가자미카레튀김  ...</td>
+      <td>1282.0</td>
+      <td>767.0</td>
+      <td>2</td>
+      <td>24</td>
+    </tr>
+    <tr>
+      <th>992</th>
+      <td>2020-02-25</td>
+      <td>2</td>
+      <td>2872</td>
+      <td>117</td>
+      <td>158</td>
+      <td>806</td>
+      <td>0.0</td>
+      <td>모닝롤/식빵피자  우유/주스 스크램블에그 잣죽/쌀밥 (쌀:국내산) 봄동된장국  시금...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미,흑미:국내산) 부대찌개 (소고기:호주산) 훈제오리구이 (훈제...</td>
+      <td>야채볶음밥 (쌀:국내산) 김치말이국수 (김치:국내산) 소고기퀘사디아 (소고기:호주산...</td>
+      <td>1238.0</td>
+      <td>776.0</td>
+      <td>2</td>
+      <td>25</td>
+    </tr>
+  </tbody>
+</table>
+<p>946 rows × 14 columns</p>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-629b6849-f7d1-4ad6-80f0-15fc655efd52')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-629b6849-f7d1-4ad6-80f0-15fc655efd52 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-629b6849-f7d1-4ad6-80f0-15fc655efd52');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+
+
+
+
+#### b)본사 시간 외 근무 이상치 발생 원인
+
+
+```python
+train[train['본사시간외근무명령서승인건수'] == 0]['요일'].value_counts()
+```
+
+
+
+
+    3    148
+    5     34
+    Name: 요일, dtype: int64
+
+
+
+
+```python
+x = ['수요일', '금요일']
+y = train[train['본사시간외근무명령서승인건수'] == 0]['요일'].value_counts().values
+
+plt.figure(dpi = 150)
+
+plt.title('야근하는 사람 0')
+plt.xlabel('요일')
+plt.ylabel('횟수')
+
+plt.bar(x, y)
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_20_0.png)
+    
+
+
+### 2)feature와 target의 상관관계
+
+#### a)중식계와 feature의 상관관계
+
+
+```python
+train.sort_values(by = '중식계')[['본사정원수',	'본사휴가자수',	'본사출장자수',	'본사시간외근무명령서승인건수',	'현본사소속재택근무자수',	'중식계']].reset_index(drop = True).plot(figsize = (15, 5))
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_23_0.png)
+    
+
+
+- 출장자수
+
+
+```python
+train.sort_values(by = '중식계')[['본사출장자수', '중식계']].reset_index(drop = True).plot(figsize = (15, 10))
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_25_0.png)
+    
+
+
+- 휴가자수
+
+
+```python
+train.sort_values(by = '중식계')[['본사휴가자수', '중식계']].reset_index(drop = True).plot(figsize = (15, 10))
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_27_0.png)
+    
+
+
+- 현재원
+
+  본사정원수 - 휴가자수 - 출장자수 - 재택근무
+
+
+```python
+train['현재원'] = train['본사정원수'] - train['본사휴가자수'] - train['본사출장자수'] - train['현본사소속재택근무자수']
+
+train.sort_values(by = '중식계')[['현재원', '중식계']].reset_index(drop = True).plot(figsize = (15, 10))
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_29_0.png)
+    
+
+
+#### b)석식계와 feature의 상관관계
+
+
+```python
+train.sort_values(by = '석식계')[['본사정원수',	'본사휴가자수',	'본사출장자수',	'본사시간외근무명령서승인건수',	'현본사소속재택근무자수',	'석식계']].reset_index(drop = True).plot(figsize = (15, 5))
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_31_0.png)
+    
+
+
+- 시간외근무
+
+
+```python
+train.sort_values(by = '석식계')[['본사시간외근무명령서승인건수', '석식계']].reset_index(drop = True).plot(figsize = (15, 5))
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_33_0.png)
+    
+
+
+#### c)중식계와 석식계의 상관관계
+
+
+```python
+train.sort_values(by = '석식계')[['중식계', '석식계']].reset_index(drop = True).plot(figsize = (15, 5))
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_35_0.png)
+    
+
+
+## 2.EDA를 통해 도출한 인사이트
+
+- 본사정원수는 target과 관계가 없다.
+
+- 본사정원수는 현재원으로 활용 가능하다.
+
+- 중식계는 휴가자수와 출장자수와 관계가있다.
+
+- 석식계는 시간외근무자수와 관계가 있다.
+
+- 중식계와 석식계는 상관관계가 있다.
+
+### 1)본사정원수는 target과 관계가 없다.
+
+
+```python
+train.sort_values(by = '중식계')[['본사정원수', '중식계']].reset_index(drop = True).plot(figsize = (15, 10))
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_39_0.png)
+    
+
+
+### 2) 본사정원수는 현재원으로 활용이 가능하다.
+
+
+```python
+train.sort_values(by = '중식계')[['현재원', '중식계']].reset_index(drop = True).plot(figsize = (15, 10))
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_41_0.png)
+    
+
+
+### 3)중식계와 석식계는 상관관계가 있다.
+
+
+```python
+train.sort_values(by = '석식계')[['중식계', '석식계']].reset_index(drop = True).plot(figsize = (15, 10))
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_43_0.png)
+    
+
+
+## 3.인사이트를 바탕으로 모델 수정
+
+
+```python
+train
+
+features = ['요일', '월', '일', '현재원', '본사휴가자수', '본사출장자수', '본사시간외근무명령서승인건수', '현본사소속재택근무자수']
+train[features]
+```
+
+
+
+
+
+  <div id="df-8251f4a8-0d24-44ae-9c75-fe3ef1c7b400">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>요일</th>
+      <th>월</th>
+      <th>일</th>
+      <th>현재원</th>
+      <th>본사휴가자수</th>
+      <th>본사출장자수</th>
+      <th>본사시간외근무명령서승인건수</th>
+      <th>현본사소속재택근무자수</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>2</td>
+      <td>1</td>
+      <td>2401.0</td>
+      <td>1.630689</td>
+      <td>150</td>
+      <td>238</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>2</td>
+      <td>2</td>
+      <td>2378.0</td>
+      <td>1.630689</td>
+      <td>173</td>
+      <td>319</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>2</td>
+      <td>3</td>
+      <td>2365.0</td>
+      <td>1.653954</td>
+      <td>180</td>
+      <td>111</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>4</td>
+      <td>2</td>
+      <td>4</td>
+      <td>2277.0</td>
+      <td>1.787019</td>
+      <td>220</td>
+      <td>355</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>5</td>
+      <td>2</td>
+      <td>5</td>
+      <td>2142.0</td>
+      <td>2.020717</td>
+      <td>181</td>
+      <td>34</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>1200</th>
+      <td>3</td>
+      <td>1</td>
+      <td>20</td>
+      <td>2319.0</td>
+      <td>1.715468</td>
+      <td>198</td>
+      <td>4</td>
+      <td>391.0</td>
+    </tr>
+    <tr>
+      <th>1201</th>
+      <td>4</td>
+      <td>1</td>
+      <td>21</td>
+      <td>2309.0</td>
+      <td>1.759841</td>
+      <td>231</td>
+      <td>462</td>
+      <td>351.0</td>
+    </tr>
+    <tr>
+      <th>1202</th>
+      <td>5</td>
+      <td>1</td>
+      <td>22</td>
+      <td>2177.0</td>
+      <td>1.999022</td>
+      <td>248</td>
+      <td>1</td>
+      <td>303.0</td>
+    </tr>
+    <tr>
+      <th>1203</th>
+      <td>1</td>
+      <td>1</td>
+      <td>25</td>
+      <td>2396.0</td>
+      <td>1.793383</td>
+      <td>153</td>
+      <td>616</td>
+      <td>327.0</td>
+    </tr>
+    <tr>
+      <th>1204</th>
+      <td>2</td>
+      <td>1</td>
+      <td>26</td>
+      <td>2369.0</td>
+      <td>1.697681</td>
+      <td>183</td>
+      <td>551</td>
+      <td>362.0</td>
+    </tr>
+  </tbody>
+</table>
+<p>1162 rows × 8 columns</p>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-8251f4a8-0d24-44ae-9c75-fe3ef1c7b400')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-8251f4a8-0d24-44ae-9c75-fe3ef1c7b400 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-8251f4a8-0d24-44ae-9c75-fe3ef1c7b400');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+
+
+
+
+
+```python
+test['현재원'] = test['본사정원수'] - test['본사휴가자수'] - test['본사출장자수'] - test['현본사소속재택근무자수']
+features = ['요일', '월', '일', '현재원', '본사휴가자수', '본사출장자수', '본사시간외근무명령서승인건수', '현본사소속재택근무자수']
+test[features]
+```
+
+
+
+
+
+  <div id="df-02b437b4-c1a9-45ff-92c0-43d13d602745">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>요일</th>
+      <th>월</th>
+      <th>일</th>
+      <th>현재원</th>
+      <th>본사휴가자수</th>
+      <th>본사출장자수</th>
+      <th>본사시간외근무명령서승인건수</th>
+      <th>현본사소속재택근무자수</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>3</td>
+      <td>1</td>
+      <td>27</td>
+      <td>2355.0</td>
+      <td>88</td>
+      <td>182</td>
+      <td>5</td>
+      <td>358.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>4</td>
+      <td>1</td>
+      <td>28</td>
+      <td>2319.0</td>
+      <td>104</td>
+      <td>212</td>
+      <td>409</td>
+      <td>348.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>5</td>
+      <td>1</td>
+      <td>29</td>
+      <td>2170.0</td>
+      <td>270</td>
+      <td>249</td>
+      <td>0</td>
+      <td>294.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>1</td>
+      <td>2</td>
+      <td>1</td>
+      <td>2340.0</td>
+      <td>108</td>
+      <td>154</td>
+      <td>538</td>
+      <td>322.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2</td>
+      <td>2</td>
+      <td>2</td>
+      <td>2362.0</td>
+      <td>62</td>
+      <td>186</td>
+      <td>455</td>
+      <td>314.0</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>3</td>
+      <td>2</td>
+      <td>3</td>
+      <td>2380.0</td>
+      <td>59</td>
+      <td>199</td>
+      <td>5</td>
+      <td>286.0</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>4</td>
+      <td>2</td>
+      <td>4</td>
+      <td>2364.0</td>
+      <td>61</td>
+      <td>211</td>
+      <td>476</td>
+      <td>288.0</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>5</td>
+      <td>2</td>
+      <td>5</td>
+      <td>2247.0</td>
+      <td>169</td>
+      <td>252</td>
+      <td>0</td>
+      <td>256.0</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>1</td>
+      <td>2</td>
+      <td>8</td>
+      <td>2333.0</td>
+      <td>88</td>
+      <td>174</td>
+      <td>690</td>
+      <td>329.0</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>2</td>
+      <td>2</td>
+      <td>9</td>
+      <td>2318.0</td>
+      <td>94</td>
+      <td>183</td>
+      <td>542</td>
+      <td>329.0</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>3</td>
+      <td>2</td>
+      <td>10</td>
+      <td>2068.0</td>
+      <td>489</td>
+      <td>134</td>
+      <td>0</td>
+      <td>233.0</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>1</td>
+      <td>2</td>
+      <td>15</td>
+      <td>2260.0</td>
+      <td>178</td>
+      <td>131</td>
+      <td>795</td>
+      <td>355.0</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>2</td>
+      <td>2</td>
+      <td>16</td>
+      <td>2266.0</td>
+      <td>70</td>
+      <td>175</td>
+      <td>815</td>
+      <td>413.0</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>3</td>
+      <td>2</td>
+      <td>17</td>
+      <td>2287.0</td>
+      <td>77</td>
+      <td>181</td>
+      <td>3</td>
+      <td>379.0</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>4</td>
+      <td>2</td>
+      <td>18</td>
+      <td>2256.0</td>
+      <td>83</td>
+      <td>247</td>
+      <td>594</td>
+      <td>338.0</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>5</td>
+      <td>2</td>
+      <td>19</td>
+      <td>2200.0</td>
+      <td>176</td>
+      <td>268</td>
+      <td>1</td>
+      <td>280.0</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>1</td>
+      <td>2</td>
+      <td>22</td>
+      <td>2375.0</td>
+      <td>105</td>
+      <td>197</td>
+      <td>814</td>
+      <td>247.0</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>2</td>
+      <td>2</td>
+      <td>23</td>
+      <td>2416.0</td>
+      <td>75</td>
+      <td>200</td>
+      <td>783</td>
+      <td>233.0</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>3</td>
+      <td>2</td>
+      <td>24</td>
+      <td>2378.0</td>
+      <td>77</td>
+      <td>235</td>
+      <td>3</td>
+      <td>234.0</td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>4</td>
+      <td>2</td>
+      <td>25</td>
+      <td>2346.0</td>
+      <td>91</td>
+      <td>252</td>
+      <td>585</td>
+      <td>235.0</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>5</td>
+      <td>2</td>
+      <td>26</td>
+      <td>2205.0</td>
+      <td>261</td>
+      <td>279</td>
+      <td>1</td>
+      <td>179.0</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>2</td>
+      <td>3</td>
+      <td>2</td>
+      <td>2422.0</td>
+      <td>139</td>
+      <td>166</td>
+      <td>781</td>
+      <td>248.0</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>3</td>
+      <td>3</td>
+      <td>3</td>
+      <td>2438.0</td>
+      <td>50</td>
+      <td>195</td>
+      <td>1</td>
+      <td>292.0</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>4</td>
+      <td>3</td>
+      <td>4</td>
+      <td>2404.0</td>
+      <td>72</td>
+      <td>236</td>
+      <td>746</td>
+      <td>263.0</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>5</td>
+      <td>3</td>
+      <td>5</td>
+      <td>2334.0</td>
+      <td>158</td>
+      <td>257</td>
+      <td>2</td>
+      <td>226.0</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>1</td>
+      <td>3</td>
+      <td>8</td>
+      <td>2444.0</td>
+      <td>97</td>
+      <td>170</td>
+      <td>939</td>
+      <td>264.0</td>
+    </tr>
+    <tr>
+      <th>26</th>
+      <td>2</td>
+      <td>3</td>
+      <td>9</td>
+      <td>2447.0</td>
+      <td>76</td>
+      <td>170</td>
+      <td>1003</td>
+      <td>282.0</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>3</td>
+      <td>3</td>
+      <td>10</td>
+      <td>2448.0</td>
+      <td>71</td>
+      <td>185</td>
+      <td>1</td>
+      <td>271.0</td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>4</td>
+      <td>3</td>
+      <td>11</td>
+      <td>2398.0</td>
+      <td>93</td>
+      <td>223</td>
+      <td>609</td>
+      <td>261.0</td>
+    </tr>
+    <tr>
+      <th>29</th>
+      <td>5</td>
+      <td>3</td>
+      <td>12</td>
+      <td>2243.0</td>
+      <td>241</td>
+      <td>240</td>
+      <td>0</td>
+      <td>251.0</td>
+    </tr>
+    <tr>
+      <th>30</th>
+      <td>1</td>
+      <td>3</td>
+      <td>15</td>
+      <td>2387.0</td>
+      <td>126</td>
+      <td>148</td>
+      <td>864</td>
+      <td>314.0</td>
+    </tr>
+    <tr>
+      <th>31</th>
+      <td>2</td>
+      <td>3</td>
+      <td>16</td>
+      <td>2324.0</td>
+      <td>74</td>
+      <td>176</td>
+      <td>658</td>
+      <td>401.0</td>
+    </tr>
+    <tr>
+      <th>32</th>
+      <td>3</td>
+      <td>3</td>
+      <td>17</td>
+      <td>2322.0</td>
+      <td>90</td>
+      <td>192</td>
+      <td>4</td>
+      <td>371.0</td>
+    </tr>
+    <tr>
+      <th>33</th>
+      <td>4</td>
+      <td>3</td>
+      <td>18</td>
+      <td>2287.0</td>
+      <td>106</td>
+      <td>231</td>
+      <td>520</td>
+      <td>351.0</td>
+    </tr>
+    <tr>
+      <th>34</th>
+      <td>5</td>
+      <td>3</td>
+      <td>19</td>
+      <td>2201.0</td>
+      <td>253</td>
+      <td>255</td>
+      <td>0</td>
+      <td>266.0</td>
+    </tr>
+    <tr>
+      <th>35</th>
+      <td>1</td>
+      <td>3</td>
+      <td>22</td>
+      <td>2326.0</td>
+      <td>133</td>
+      <td>166</td>
+      <td>707</td>
+      <td>350.0</td>
+    </tr>
+    <tr>
+      <th>36</th>
+      <td>2</td>
+      <td>3</td>
+      <td>23</td>
+      <td>2339.0</td>
+      <td>82</td>
+      <td>205</td>
+      <td>688</td>
+      <td>349.0</td>
+    </tr>
+    <tr>
+      <th>37</th>
+      <td>3</td>
+      <td>3</td>
+      <td>24</td>
+      <td>2340.0</td>
+      <td>87</td>
+      <td>234</td>
+      <td>0</td>
+      <td>314.0</td>
+    </tr>
+    <tr>
+      <th>38</th>
+      <td>4</td>
+      <td>3</td>
+      <td>25</td>
+      <td>2300.0</td>
+      <td>118</td>
+      <td>260</td>
+      <td>441</td>
+      <td>297.0</td>
+    </tr>
+    <tr>
+      <th>39</th>
+      <td>5</td>
+      <td>3</td>
+      <td>26</td>
+      <td>2169.0</td>
+      <td>311</td>
+      <td>266</td>
+      <td>0</td>
+      <td>229.0</td>
+    </tr>
+    <tr>
+      <th>40</th>
+      <td>1</td>
+      <td>3</td>
+      <td>29</td>
+      <td>2358.0</td>
+      <td>121</td>
+      <td>178</td>
+      <td>660</td>
+      <td>318.0</td>
+    </tr>
+    <tr>
+      <th>41</th>
+      <td>2</td>
+      <td>3</td>
+      <td>30</td>
+      <td>2381.0</td>
+      <td>83</td>
+      <td>198</td>
+      <td>625</td>
+      <td>313.0</td>
+    </tr>
+    <tr>
+      <th>42</th>
+      <td>3</td>
+      <td>3</td>
+      <td>31</td>
+      <td>2355.0</td>
+      <td>86</td>
+      <td>217</td>
+      <td>0</td>
+      <td>317.0</td>
+    </tr>
+    <tr>
+      <th>43</th>
+      <td>4</td>
+      <td>4</td>
+      <td>1</td>
+      <td>2326.0</td>
+      <td>88</td>
+      <td>256</td>
+      <td>394</td>
+      <td>303.0</td>
+    </tr>
+    <tr>
+      <th>44</th>
+      <td>5</td>
+      <td>4</td>
+      <td>2</td>
+      <td>2202.0</td>
+      <td>275</td>
+      <td>272</td>
+      <td>0</td>
+      <td>224.0</td>
+    </tr>
+    <tr>
+      <th>45</th>
+      <td>1</td>
+      <td>4</td>
+      <td>5</td>
+      <td>2343.0</td>
+      <td>125</td>
+      <td>174</td>
+      <td>704</td>
+      <td>331.0</td>
+    </tr>
+    <tr>
+      <th>46</th>
+      <td>2</td>
+      <td>4</td>
+      <td>6</td>
+      <td>2363.0</td>
+      <td>76</td>
+      <td>170</td>
+      <td>636</td>
+      <td>364.0</td>
+    </tr>
+    <tr>
+      <th>47</th>
+      <td>3</td>
+      <td>4</td>
+      <td>7</td>
+      <td>2329.0</td>
+      <td>96</td>
+      <td>214</td>
+      <td>1</td>
+      <td>334.0</td>
+    </tr>
+    <tr>
+      <th>48</th>
+      <td>4</td>
+      <td>4</td>
+      <td>8</td>
+      <td>2306.0</td>
+      <td>105</td>
+      <td>238</td>
+      <td>509</td>
+      <td>324.0</td>
+    </tr>
+    <tr>
+      <th>49</th>
+      <td>5</td>
+      <td>4</td>
+      <td>9</td>
+      <td>2217.0</td>
+      <td>259</td>
+      <td>268</td>
+      <td>0</td>
+      <td>229.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-02b437b4-c1a9-45ff-92c0-43d13d602745')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-02b437b4-c1a9-45ff-92c0-43d13d602745 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-02b437b4-c1a9-45ff-92c0-43d13d602745');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+
+
+
+
+#### 1)중식계 예측 모델
+
+
+```python
+X = train[features]
+y = train['중식계']
+
+from sklearn.tree import DecisionTreeRegressor
+lunch_model = DecisionTreeRegressor()
+
+lunch_model.fit(X, y)
+
+lunch_count_predict = lunch_model.predict(test[features])
+```
+
+### 2)석식계 예측 모델
+
+
+```python
+features
+```
+
+
+
+
+    ['요일', '월', '일', '현재원', '본사휴가자수', '본사출장자수', '본사시간외근무명령서승인건수', '현본사소속재택근무자수']
+
+
+
+
+```python
+features.append('중식계')
+features
+```
+
+
+
+
+    ['요일',
+     '월',
+     '일',
+     '현재원',
+     '본사휴가자수',
+     '본사출장자수',
+     '본사시간외근무명령서승인건수',
+     '현본사소속재택근무자수',
+     '중식계']
+
+
+
+
+```python
+train.head(1)
+```
+
+
+
+
+
+  <div id="df-c7cc3644-6c15-4a79-9d86-607758482b7b">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>일자</th>
+      <th>요일</th>
+      <th>본사정원수</th>
+      <th>본사휴가자수</th>
+      <th>본사출장자수</th>
+      <th>본사시간외근무명령서승인건수</th>
+      <th>현본사소속재택근무자수</th>
+      <th>조식메뉴</th>
+      <th>중식메뉴</th>
+      <th>석식메뉴</th>
+      <th>중식계</th>
+      <th>석식계</th>
+      <th>월</th>
+      <th>일</th>
+      <th>현재원</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2016-02-01</td>
+      <td>1</td>
+      <td>2601</td>
+      <td>50</td>
+      <td>150</td>
+      <td>238</td>
+      <td>0.0</td>
+      <td>모닝롤/찐빵  우유/두유/주스 계란후라이  호두죽/쌀밥 (쌀:국내산) 된장찌개  쥐...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 오징어찌개  쇠불고기 (쇠고기:호주산) 계란찜 ...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 육개장  자반고등어구이  두부조림  건파래무침 ...</td>
+      <td>1039.0</td>
+      <td>331.0</td>
+      <td>2</td>
+      <td>1</td>
+      <td>2401.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-c7cc3644-6c15-4a79-9d86-607758482b7b')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-c7cc3644-6c15-4a79-9d86-607758482b7b button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-c7cc3644-6c15-4a79-9d86-607758482b7b');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+
+
+
+
+
+```python
+test['중식계'] = lunch_count_predict
+X = train[features]
+y = train['석식계']
+
+dinner_model = DecisionTreeRegressor()
+
+dinner_model.fit(X, y)
+
+dinner_count_predict = dinner_model.predict(test[features])
+```
+
+
+```python
+test['중식계'] = lunch_count_predict
+test[features]
+```
+
+
+
+
+
+  <div id="df-140b62ec-daae-4007-8453-b6130c66dfb0">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>요일</th>
+      <th>월</th>
+      <th>일</th>
+      <th>현재원</th>
+      <th>본사휴가자수</th>
+      <th>본사출장자수</th>
+      <th>본사시간외근무명령서승인건수</th>
+      <th>현본사소속재택근무자수</th>
+      <th>중식계</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>3</td>
+      <td>1</td>
+      <td>27</td>
+      <td>2355.0</td>
+      <td>88</td>
+      <td>182</td>
+      <td>5</td>
+      <td>358.0</td>
+      <td>1128.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>4</td>
+      <td>1</td>
+      <td>28</td>
+      <td>2319.0</td>
+      <td>104</td>
+      <td>212</td>
+      <td>409</td>
+      <td>348.0</td>
+      <td>963.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>5</td>
+      <td>1</td>
+      <td>29</td>
+      <td>2170.0</td>
+      <td>270</td>
+      <td>249</td>
+      <td>0</td>
+      <td>294.0</td>
+      <td>394.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>1</td>
+      <td>2</td>
+      <td>1</td>
+      <td>2340.0</td>
+      <td>108</td>
+      <td>154</td>
+      <td>538</td>
+      <td>322.0</td>
+      <td>1257.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2</td>
+      <td>2</td>
+      <td>2</td>
+      <td>2362.0</td>
+      <td>62</td>
+      <td>186</td>
+      <td>455</td>
+      <td>314.0</td>
+      <td>867.0</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>3</td>
+      <td>2</td>
+      <td>3</td>
+      <td>2380.0</td>
+      <td>59</td>
+      <td>199</td>
+      <td>5</td>
+      <td>286.0</td>
+      <td>949.0</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>4</td>
+      <td>2</td>
+      <td>4</td>
+      <td>2364.0</td>
+      <td>61</td>
+      <td>211</td>
+      <td>476</td>
+      <td>288.0</td>
+      <td>1005.0</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>5</td>
+      <td>2</td>
+      <td>5</td>
+      <td>2247.0</td>
+      <td>169</td>
+      <td>252</td>
+      <td>0</td>
+      <td>256.0</td>
+      <td>661.0</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>1</td>
+      <td>2</td>
+      <td>8</td>
+      <td>2333.0</td>
+      <td>88</td>
+      <td>174</td>
+      <td>690</td>
+      <td>329.0</td>
+      <td>1364.0</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>2</td>
+      <td>2</td>
+      <td>9</td>
+      <td>2318.0</td>
+      <td>94</td>
+      <td>183</td>
+      <td>542</td>
+      <td>329.0</td>
+      <td>1128.0</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>3</td>
+      <td>2</td>
+      <td>10</td>
+      <td>2068.0</td>
+      <td>489</td>
+      <td>134</td>
+      <td>0</td>
+      <td>233.0</td>
+      <td>967.0</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>1</td>
+      <td>2</td>
+      <td>15</td>
+      <td>2260.0</td>
+      <td>178</td>
+      <td>131</td>
+      <td>795</td>
+      <td>355.0</td>
+      <td>1257.0</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>2</td>
+      <td>2</td>
+      <td>16</td>
+      <td>2266.0</td>
+      <td>70</td>
+      <td>175</td>
+      <td>815</td>
+      <td>413.0</td>
+      <td>1202.0</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>3</td>
+      <td>2</td>
+      <td>17</td>
+      <td>2287.0</td>
+      <td>77</td>
+      <td>181</td>
+      <td>3</td>
+      <td>379.0</td>
+      <td>1128.0</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>4</td>
+      <td>2</td>
+      <td>18</td>
+      <td>2256.0</td>
+      <td>83</td>
+      <td>247</td>
+      <td>594</td>
+      <td>338.0</td>
+      <td>959.0</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>5</td>
+      <td>2</td>
+      <td>19</td>
+      <td>2200.0</td>
+      <td>176</td>
+      <td>268</td>
+      <td>1</td>
+      <td>280.0</td>
+      <td>766.0</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>1</td>
+      <td>2</td>
+      <td>22</td>
+      <td>2375.0</td>
+      <td>105</td>
+      <td>197</td>
+      <td>814</td>
+      <td>247.0</td>
+      <td>1142.0</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>2</td>
+      <td>2</td>
+      <td>23</td>
+      <td>2416.0</td>
+      <td>75</td>
+      <td>200</td>
+      <td>783</td>
+      <td>233.0</td>
+      <td>1074.0</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>3</td>
+      <td>2</td>
+      <td>24</td>
+      <td>2378.0</td>
+      <td>77</td>
+      <td>235</td>
+      <td>3</td>
+      <td>234.0</td>
+      <td>831.0</td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>4</td>
+      <td>2</td>
+      <td>25</td>
+      <td>2346.0</td>
+      <td>91</td>
+      <td>252</td>
+      <td>585</td>
+      <td>235.0</td>
+      <td>740.0</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>5</td>
+      <td>2</td>
+      <td>26</td>
+      <td>2205.0</td>
+      <td>261</td>
+      <td>279</td>
+      <td>1</td>
+      <td>179.0</td>
+      <td>766.0</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>2</td>
+      <td>3</td>
+      <td>2</td>
+      <td>2422.0</td>
+      <td>139</td>
+      <td>166</td>
+      <td>781</td>
+      <td>248.0</td>
+      <td>1083.0</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>3</td>
+      <td>3</td>
+      <td>3</td>
+      <td>2438.0</td>
+      <td>50</td>
+      <td>195</td>
+      <td>1</td>
+      <td>292.0</td>
+      <td>949.0</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>4</td>
+      <td>3</td>
+      <td>4</td>
+      <td>2404.0</td>
+      <td>72</td>
+      <td>236</td>
+      <td>746</td>
+      <td>263.0</td>
+      <td>797.0</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>5</td>
+      <td>3</td>
+      <td>5</td>
+      <td>2334.0</td>
+      <td>158</td>
+      <td>257</td>
+      <td>2</td>
+      <td>226.0</td>
+      <td>620.0</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>1</td>
+      <td>3</td>
+      <td>8</td>
+      <td>2444.0</td>
+      <td>97</td>
+      <td>170</td>
+      <td>939</td>
+      <td>264.0</td>
+      <td>1186.0</td>
+    </tr>
+    <tr>
+      <th>26</th>
+      <td>2</td>
+      <td>3</td>
+      <td>9</td>
+      <td>2447.0</td>
+      <td>76</td>
+      <td>170</td>
+      <td>1003</td>
+      <td>282.0</td>
+      <td>1319.0</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>3</td>
+      <td>3</td>
+      <td>10</td>
+      <td>2448.0</td>
+      <td>71</td>
+      <td>185</td>
+      <td>1</td>
+      <td>271.0</td>
+      <td>1022.0</td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>4</td>
+      <td>3</td>
+      <td>11</td>
+      <td>2398.0</td>
+      <td>93</td>
+      <td>223</td>
+      <td>609</td>
+      <td>261.0</td>
+      <td>923.0</td>
+    </tr>
+    <tr>
+      <th>29</th>
+      <td>5</td>
+      <td>3</td>
+      <td>12</td>
+      <td>2243.0</td>
+      <td>241</td>
+      <td>240</td>
+      <td>0</td>
+      <td>251.0</td>
+      <td>929.0</td>
+    </tr>
+    <tr>
+      <th>30</th>
+      <td>1</td>
+      <td>3</td>
+      <td>15</td>
+      <td>2387.0</td>
+      <td>126</td>
+      <td>148</td>
+      <td>864</td>
+      <td>314.0</td>
+      <td>1145.0</td>
+    </tr>
+    <tr>
+      <th>31</th>
+      <td>2</td>
+      <td>3</td>
+      <td>16</td>
+      <td>2324.0</td>
+      <td>74</td>
+      <td>176</td>
+      <td>658</td>
+      <td>401.0</td>
+      <td>913.0</td>
+    </tr>
+    <tr>
+      <th>32</th>
+      <td>3</td>
+      <td>3</td>
+      <td>17</td>
+      <td>2322.0</td>
+      <td>90</td>
+      <td>192</td>
+      <td>4</td>
+      <td>371.0</td>
+      <td>1128.0</td>
+    </tr>
+    <tr>
+      <th>33</th>
+      <td>4</td>
+      <td>3</td>
+      <td>18</td>
+      <td>2287.0</td>
+      <td>106</td>
+      <td>231</td>
+      <td>520</td>
+      <td>351.0</td>
+      <td>969.0</td>
+    </tr>
+    <tr>
+      <th>34</th>
+      <td>5</td>
+      <td>3</td>
+      <td>19</td>
+      <td>2201.0</td>
+      <td>253</td>
+      <td>255</td>
+      <td>0</td>
+      <td>266.0</td>
+      <td>766.0</td>
+    </tr>
+    <tr>
+      <th>35</th>
+      <td>1</td>
+      <td>3</td>
+      <td>22</td>
+      <td>2326.0</td>
+      <td>133</td>
+      <td>166</td>
+      <td>707</td>
+      <td>350.0</td>
+      <td>1257.0</td>
+    </tr>
+    <tr>
+      <th>36</th>
+      <td>2</td>
+      <td>3</td>
+      <td>23</td>
+      <td>2339.0</td>
+      <td>82</td>
+      <td>205</td>
+      <td>688</td>
+      <td>349.0</td>
+      <td>831.0</td>
+    </tr>
+    <tr>
+      <th>37</th>
+      <td>3</td>
+      <td>3</td>
+      <td>24</td>
+      <td>2340.0</td>
+      <td>87</td>
+      <td>234</td>
+      <td>0</td>
+      <td>314.0</td>
+      <td>958.0</td>
+    </tr>
+    <tr>
+      <th>38</th>
+      <td>4</td>
+      <td>3</td>
+      <td>25</td>
+      <td>2300.0</td>
+      <td>118</td>
+      <td>260</td>
+      <td>441</td>
+      <td>297.0</td>
+      <td>971.0</td>
+    </tr>
+    <tr>
+      <th>39</th>
+      <td>5</td>
+      <td>3</td>
+      <td>26</td>
+      <td>2169.0</td>
+      <td>311</td>
+      <td>266</td>
+      <td>0</td>
+      <td>229.0</td>
+      <td>477.0</td>
+    </tr>
+    <tr>
+      <th>40</th>
+      <td>1</td>
+      <td>3</td>
+      <td>29</td>
+      <td>2358.0</td>
+      <td>121</td>
+      <td>178</td>
+      <td>660</td>
+      <td>318.0</td>
+      <td>1110.0</td>
+    </tr>
+    <tr>
+      <th>41</th>
+      <td>2</td>
+      <td>3</td>
+      <td>30</td>
+      <td>2381.0</td>
+      <td>83</td>
+      <td>198</td>
+      <td>625</td>
+      <td>313.0</td>
+      <td>1074.0</td>
+    </tr>
+    <tr>
+      <th>42</th>
+      <td>3</td>
+      <td>3</td>
+      <td>31</td>
+      <td>2355.0</td>
+      <td>86</td>
+      <td>217</td>
+      <td>0</td>
+      <td>317.0</td>
+      <td>958.0</td>
+    </tr>
+    <tr>
+      <th>43</th>
+      <td>4</td>
+      <td>4</td>
+      <td>1</td>
+      <td>2326.0</td>
+      <td>88</td>
+      <td>256</td>
+      <td>394</td>
+      <td>303.0</td>
+      <td>765.0</td>
+    </tr>
+    <tr>
+      <th>44</th>
+      <td>5</td>
+      <td>4</td>
+      <td>2</td>
+      <td>2202.0</td>
+      <td>275</td>
+      <td>272</td>
+      <td>0</td>
+      <td>224.0</td>
+      <td>459.0</td>
+    </tr>
+    <tr>
+      <th>45</th>
+      <td>1</td>
+      <td>4</td>
+      <td>5</td>
+      <td>2343.0</td>
+      <td>125</td>
+      <td>174</td>
+      <td>704</td>
+      <td>331.0</td>
+      <td>1257.0</td>
+    </tr>
+    <tr>
+      <th>46</th>
+      <td>2</td>
+      <td>4</td>
+      <td>6</td>
+      <td>2363.0</td>
+      <td>76</td>
+      <td>170</td>
+      <td>636</td>
+      <td>364.0</td>
+      <td>809.0</td>
+    </tr>
+    <tr>
+      <th>47</th>
+      <td>3</td>
+      <td>4</td>
+      <td>7</td>
+      <td>2329.0</td>
+      <td>96</td>
+      <td>214</td>
+      <td>1</td>
+      <td>334.0</td>
+      <td>1235.0</td>
+    </tr>
+    <tr>
+      <th>48</th>
+      <td>4</td>
+      <td>4</td>
+      <td>8</td>
+      <td>2306.0</td>
+      <td>105</td>
+      <td>238</td>
+      <td>509</td>
+      <td>324.0</td>
+      <td>739.0</td>
+    </tr>
+    <tr>
+      <th>49</th>
+      <td>5</td>
+      <td>4</td>
+      <td>9</td>
+      <td>2217.0</td>
+      <td>259</td>
+      <td>268</td>
+      <td>0</td>
+      <td>229.0</td>
+      <td>867.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-140b62ec-daae-4007-8453-b6130c66dfb0')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-140b62ec-daae-4007-8453-b6130c66dfb0 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-140b62ec-daae-4007-8453-b6130c66dfb0');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+
+
+
+
+
+```python
+X = train[features]
+y = train['석식계']
+
+dinner_model = DecisionTreeRegressor()
+
+dinner_model.fit(X, y)
+
+dinner_count_predict = dinner_model.predict(test[features])
+```
+
+
+```python
+plt.plot(dinner_count_predict)
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_56_0.png)
+    
+
+
+
+```python
+submission['중식계'] = lunch_count_predict
+submission['석식계'] = dinner_count_predict
+submission
+```
+
+
+
+
+
+  <div id="df-fea519a0-aee2-4866-acdb-3a5e828fc030">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>일자</th>
+      <th>중식계</th>
+      <th>석식계</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2021-01-27</td>
+      <td>1128.0</td>
+      <td>421.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2021-01-28</td>
+      <td>963.0</td>
+      <td>469.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2021-01-29</td>
+      <td>394.0</td>
+      <td>212.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2021-02-01</td>
+      <td>1257.0</td>
+      <td>633.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2021-02-02</td>
+      <td>867.0</td>
+      <td>467.0</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>2021-02-03</td>
+      <td>949.0</td>
+      <td>427.0</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>2021-02-04</td>
+      <td>1005.0</td>
+      <td>609.0</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>2021-02-05</td>
+      <td>661.0</td>
+      <td>287.0</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>2021-02-08</td>
+      <td>1364.0</td>
+      <td>772.0</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>2021-02-09</td>
+      <td>1128.0</td>
+      <td>554.0</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>2021-02-10</td>
+      <td>967.0</td>
+      <td>308.0</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>2021-02-15</td>
+      <td>1257.0</td>
+      <td>649.0</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>2021-02-16</td>
+      <td>1202.0</td>
+      <td>597.0</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>2021-02-17</td>
+      <td>1128.0</td>
+      <td>421.0</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>2021-02-18</td>
+      <td>959.0</td>
+      <td>620.0</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>2021-02-19</td>
+      <td>766.0</td>
+      <td>287.0</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>2021-02-22</td>
+      <td>1142.0</td>
+      <td>776.0</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>2021-02-23</td>
+      <td>1074.0</td>
+      <td>653.0</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>2021-02-24</td>
+      <td>831.0</td>
+      <td>403.0</td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>2021-02-25</td>
+      <td>740.0</td>
+      <td>433.0</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>2021-02-26</td>
+      <td>766.0</td>
+      <td>220.0</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>2021-03-02</td>
+      <td>1083.0</td>
+      <td>668.0</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>2021-03-03</td>
+      <td>949.0</td>
+      <td>427.0</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>2021-03-04</td>
+      <td>797.0</td>
+      <td>424.0</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>2021-03-05</td>
+      <td>620.0</td>
+      <td>371.0</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>2021-03-08</td>
+      <td>1186.0</td>
+      <td>597.0</td>
+    </tr>
+    <tr>
+      <th>26</th>
+      <td>2021-03-09</td>
+      <td>1319.0</td>
+      <td>772.0</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>2021-03-10</td>
+      <td>1022.0</td>
+      <td>490.0</td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>2021-03-11</td>
+      <td>923.0</td>
+      <td>566.0</td>
+    </tr>
+    <tr>
+      <th>29</th>
+      <td>2021-03-12</td>
+      <td>929.0</td>
+      <td>280.0</td>
+    </tr>
+    <tr>
+      <th>30</th>
+      <td>2021-03-15</td>
+      <td>1145.0</td>
+      <td>633.0</td>
+    </tr>
+    <tr>
+      <th>31</th>
+      <td>2021-03-16</td>
+      <td>913.0</td>
+      <td>520.0</td>
+    </tr>
+    <tr>
+      <th>32</th>
+      <td>2021-03-17</td>
+      <td>1128.0</td>
+      <td>421.0</td>
+    </tr>
+    <tr>
+      <th>33</th>
+      <td>2021-03-18</td>
+      <td>969.0</td>
+      <td>647.0</td>
+    </tr>
+    <tr>
+      <th>34</th>
+      <td>2021-03-19</td>
+      <td>766.0</td>
+      <td>220.0</td>
+    </tr>
+    <tr>
+      <th>35</th>
+      <td>2021-03-22</td>
+      <td>1257.0</td>
+      <td>649.0</td>
+    </tr>
+    <tr>
+      <th>36</th>
+      <td>2021-03-23</td>
+      <td>831.0</td>
+      <td>502.0</td>
+    </tr>
+    <tr>
+      <th>37</th>
+      <td>2021-03-24</td>
+      <td>958.0</td>
+      <td>540.0</td>
+    </tr>
+    <tr>
+      <th>38</th>
+      <td>2021-03-25</td>
+      <td>971.0</td>
+      <td>559.0</td>
+    </tr>
+    <tr>
+      <th>39</th>
+      <td>2021-03-26</td>
+      <td>477.0</td>
+      <td>231.0</td>
+    </tr>
+    <tr>
+      <th>40</th>
+      <td>2021-03-29</td>
+      <td>1110.0</td>
+      <td>754.0</td>
+    </tr>
+    <tr>
+      <th>41</th>
+      <td>2021-03-30</td>
+      <td>1074.0</td>
+      <td>653.0</td>
+    </tr>
+    <tr>
+      <th>42</th>
+      <td>2021-03-31</td>
+      <td>958.0</td>
+      <td>526.0</td>
+    </tr>
+    <tr>
+      <th>43</th>
+      <td>2021-04-01</td>
+      <td>765.0</td>
+      <td>353.0</td>
+    </tr>
+    <tr>
+      <th>44</th>
+      <td>2021-04-02</td>
+      <td>459.0</td>
+      <td>276.0</td>
+    </tr>
+    <tr>
+      <th>45</th>
+      <td>2021-04-05</td>
+      <td>1257.0</td>
+      <td>649.0</td>
+    </tr>
+    <tr>
+      <th>46</th>
+      <td>2021-04-06</td>
+      <td>809.0</td>
+      <td>421.0</td>
+    </tr>
+    <tr>
+      <th>47</th>
+      <td>2021-04-07</td>
+      <td>1235.0</td>
+      <td>450.0</td>
+    </tr>
+    <tr>
+      <th>48</th>
+      <td>2021-04-08</td>
+      <td>739.0</td>
+      <td>433.0</td>
+    </tr>
+    <tr>
+      <th>49</th>
+      <td>2021-04-09</td>
+      <td>867.0</td>
+      <td>280.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-fea519a0-aee2-4866-acdb-3a5e828fc030')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-fea519a0-aee2-4866-acdb-3a5e828fc030 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-fea519a0-aee2-4866-acdb-3a5e828fc030');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+
+
+
+
+## 4.변수중요도를 이용한 가설검정
+
+### 1)중식계 변수중요도
+
+
+```python
+features
+```
+
+
+
+
+    ['요일',
+     '월',
+     '일',
+     '현재원',
+     '본사휴가자수',
+     '본사출장자수',
+     '본사시간외근무명령서승인건수',
+     '현본사소속재택근무자수',
+     '중식계']
+
+
+
+
+```python
+features = features[:-1]
+features
+```
+
+
+
+
+    ['요일', '월', '일', '현재원', '본사휴가자수', '본사출장자수', '본사시간외근무명령서승인건수', '현본사소속재택근무자수']
+
+
+
+
+```python
+lunch_model.feature_importances_
+```
+
+
+
+
+    array([0.59049851, 0.03755518, 0.02416934, 0.04356114, 0.15769108,
+           0.07727392, 0.05962289, 0.00962793])
+
+
+
+
+```python
+x = train[features].columns
+y = lunch_model.feature_importances_
+
+plt.figure(dpi = 150)
+#plt.xticks(rotation = 90)
+
+plt.xlabel('중식계 예측 모델의 변수중요도')
+plt.ylabel('변수명')
+
+plt.barh(x, y)
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_63_0.png)
+    
+
+
+### 2)석식계 변수중요도
+
+
+```python
+features
+```
+
+
+
+
+    ['요일', '월', '일', '현재원', '본사휴가자수', '본사출장자수', '본사시간외근무명령서승인건수', '현본사소속재택근무자수']
+
+
+
+
+```python
+features.append('중식계')
+```
+
+
+```python
+features
+```
+
+
+
+
+    ['요일',
+     '월',
+     '일',
+     '현재원',
+     '본사휴가자수',
+     '본사출장자수',
+     '본사시간외근무명령서승인건수',
+     '현본사소속재택근무자수',
+     '중식계']
+
+
+
+
+```python
+x = train[features].columns
+y = dinner_model.feature_importances_
+
+plt.figure(dpi = 150)
+
+
+plt.xlabel('석식계 예측 모델의 변수중요도')
+plt.ylabel('변수명')
+
+plt.barh(x, y)
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_68_0.png)
+    
+
+
+# 모델 선택, 모델 튜닝
+
+## 1.데이터 다시 로드, 전처리
+
+
+```python
+train = pd.read_csv('/content/drive/MyDrive/구내식당/train.csv')
+test = pd.read_csv('/content/drive/MyDrive/구내식당/test.csv')
+submission = pd.read_csv('/content/drive/MyDrive/구내식당/sample_submission.csv')
+```
+
+
+```python
+# 석식 이용 인원 0인 날 삭제
+train = train[train['석식계'] != 0]
+
+#요일 숫자로 변경
+train.loc[train['요일'] == '월', '요일'] = 1
+train.loc[train['요일'] == '화', '요일'] = 2
+train.loc[train['요일'] == '수', '요일'] = 3
+train.loc[train['요일'] == '목', '요일'] = 4
+train.loc[train['요일'] == '금', '요일'] = 5
+
+#월 칼럼 추가
+def month(text:str):
+  return int(text[5:7])
+train['월'] = train['일자'].map(month)
+
+#일 칼럼 추가
+def day(text:str):
+  return int(text[8:10])
+train['일'] = train['일자'].map(day)
+
+#현재원 칼럼 추가
+train['현재원'] = train['본사정원수'] - train['본사휴가자수'] - train['본사출장자수'] - train['현본사소속재택근무자수']
+```
+
+
+```python
+#요일 숫자로 변경
+test.loc[test['요일'] == '월', '요일'] = 1
+test.loc[test['요일'] == '화', '요일'] = 2
+test.loc[test['요일'] == '수', '요일'] = 3
+test.loc[test['요일'] == '목', '요일'] = 4
+test.loc[test['요일'] == '금', '요일'] = 5
+
+#월 칼럼 추가
+def month(text:str):
+  return int(text[5:7])
+test['월'] = test['일자'].map(month)
+
+#일 칼럼 추가
+def day(text:str):
+  return int(text[8:10])
+test['일'] = test['일자'].map(day)
+
+#현재원 칼럼 추가
+test['현재원'] = test['본사정원수'] - test['본사휴가자수'] - test['본사출장자수'] - test['현본사소속재택근무자수']
+```
+
+## 2.랜덤포레스트 모델
+
+### 1)중식계 예측 모델
+
+
+```python
+features
+```
+
+
+
+
+
+  <div id="df-05505156-f0cc-46e2-9a25-1bfd0ab0318c">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>일자</th>
+      <th>요일</th>
+      <th>본사정원수</th>
+      <th>본사휴가자수</th>
+      <th>본사출장자수</th>
+      <th>본사시간외근무명령서승인건수</th>
+      <th>현본사소속재택근무자수</th>
+      <th>조식메뉴</th>
+      <th>중식메뉴</th>
+      <th>석식메뉴</th>
+      <th>중식계</th>
+      <th>석식계</th>
+      <th>월</th>
+      <th>일</th>
+      <th>현재원</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2016-02-01</td>
+      <td>1</td>
+      <td>2601</td>
+      <td>50</td>
+      <td>150</td>
+      <td>238</td>
+      <td>0.0</td>
+      <td>모닝롤/찐빵  우유/두유/주스 계란후라이  호두죽/쌀밥 (쌀:국내산) 된장찌개  쥐...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 오징어찌개  쇠불고기 (쇠고기:호주산) 계란찜 ...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 육개장  자반고등어구이  두부조림  건파래무침 ...</td>
+      <td>1039.0</td>
+      <td>331.0</td>
+      <td>2</td>
+      <td>1</td>
+      <td>2401.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2016-02-02</td>
+      <td>2</td>
+      <td>2601</td>
+      <td>50</td>
+      <td>173</td>
+      <td>319</td>
+      <td>0.0</td>
+      <td>모닝롤/단호박샌드  우유/두유/주스 계란후라이  팥죽/쌀밥 (쌀:국내산) 호박젓국찌...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 김치찌개  가자미튀김  모둠소세지구이  마늘쫑무...</td>
+      <td>콩나물밥*양념장 (쌀,현미흑미:국내산) 어묵국  유산슬 (쇠고기:호주산) 아삭고추무...</td>
+      <td>867.0</td>
+      <td>560.0</td>
+      <td>2</td>
+      <td>2</td>
+      <td>2378.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2016-02-03</td>
+      <td>3</td>
+      <td>2601</td>
+      <td>56</td>
+      <td>180</td>
+      <td>111</td>
+      <td>0.0</td>
+      <td>모닝롤/베이글  우유/두유/주스 계란후라이  표고버섯죽/쌀밥 (쌀:국내산) 콩나물국...</td>
+      <td>카레덮밥 (쌀,현미흑미:국내산) 팽이장국  치킨핑거 (닭고기:국내산) 쫄면야채무침 ...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 청국장찌개  황태양념구이 (황태:러시아산) 고기...</td>
+      <td>1017.0</td>
+      <td>573.0</td>
+      <td>2</td>
+      <td>3</td>
+      <td>2365.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2016-02-04</td>
+      <td>4</td>
+      <td>2601</td>
+      <td>104</td>
+      <td>220</td>
+      <td>355</td>
+      <td>0.0</td>
+      <td>모닝롤/토마토샌드  우유/두유/주스 계란후라이  닭죽/쌀밥 (쌀,닭:국내산) 근대국...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 쇠고기무국  주꾸미볶음  부추전  시금치나물  ...</td>
+      <td>미니김밥*겨자장 (쌀,현미흑미:국내산) 우동  멕시칸샐러드  군고구마  무피클  포...</td>
+      <td>978.0</td>
+      <td>525.0</td>
+      <td>2</td>
+      <td>4</td>
+      <td>2277.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2016-02-05</td>
+      <td>5</td>
+      <td>2601</td>
+      <td>278</td>
+      <td>181</td>
+      <td>34</td>
+      <td>0.0</td>
+      <td>모닝롤/와플  우유/두유/주스 계란후라이  쇠고기죽/쌀밥 (쌀:국내산) 재첩국  방...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 떡국  돈육씨앗강정 (돼지고기:국내산) 우엉잡채...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 차돌박이찌개 (쇠고기:호주산) 닭갈비 (닭고기:...</td>
+      <td>925.0</td>
+      <td>330.0</td>
+      <td>2</td>
+      <td>5</td>
+      <td>2142.0</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>1200</th>
+      <td>2021-01-20</td>
+      <td>3</td>
+      <td>2983</td>
+      <td>75</td>
+      <td>198</td>
+      <td>4</td>
+      <td>391.0</td>
+      <td>모닝롤/페퍼로니피자 우유/주스 계란후라이/찐계란 크루통크림스프/흑미밥 아귀지리 마늘...</td>
+      <td>쌀밥/흑미밥/찰현미밥 아욱국 수제함박스테이크 견과류마카로니범벅 생깻잎지 단호박물김치...</td>
+      <td>김치볶음밥 미니쫄우동*맛살튀김 브로콜리깨소스무침 계란후라이 고들빼기무침 겉절이김치</td>
+      <td>1093.0</td>
+      <td>421.0</td>
+      <td>1</td>
+      <td>20</td>
+      <td>2319.0</td>
+    </tr>
+    <tr>
+      <th>1201</th>
+      <td>2021-01-21</td>
+      <td>4</td>
+      <td>2983</td>
+      <td>92</td>
+      <td>231</td>
+      <td>462</td>
+      <td>351.0</td>
+      <td>모닝롤/생크림단팥빵 우유/주스 계란후라이/찐계란 누룽지탕/흑미밥 떡국 해물땡굴소스볶...</td>
+      <td>쌀밥/수수밥/찰현미밥 냉이된장국 동파육 봄동전 청경채/버섯숙회*초장 무생채 양상추샐...</td>
+      <td>흑미밥 쇠고기무국 삼치양념구이 비엔나채소볶음 숙주나물당근무침 포기김치</td>
+      <td>832.0</td>
+      <td>353.0</td>
+      <td>1</td>
+      <td>21</td>
+      <td>2309.0</td>
+    </tr>
+    <tr>
+      <th>1202</th>
+      <td>2021-01-22</td>
+      <td>5</td>
+      <td>2983</td>
+      <td>255</td>
+      <td>248</td>
+      <td>1</td>
+      <td>303.0</td>
+      <td>모닝롤/BLT샌드위치 우유/주스 계란후라이/찐계란 흑임자죽/흑미밥 바지락살국 두부조...</td>
+      <td>전주비빔밥*약고추장 계란파국 요거닭 올방개묵무침 파프리카해초무침 포기김치 양상추샐러...</td>
+      <td>흑미밥 수제비국 수제맛쵸킹탕수육 유부채소겨자냉채 참나물무침 갓김치/겉절이김치</td>
+      <td>579.0</td>
+      <td>217.0</td>
+      <td>1</td>
+      <td>22</td>
+      <td>2177.0</td>
+    </tr>
+    <tr>
+      <th>1203</th>
+      <td>2021-01-25</td>
+      <td>1</td>
+      <td>2983</td>
+      <td>107</td>
+      <td>153</td>
+      <td>616</td>
+      <td>327.0</td>
+      <td>모닝롤/호박고구마오븐구이 우유/주스 계란후라이/찐계란 누룽지탕/흑미밥 감자양파국 분...</td>
+      <td>쌀밥/흑미밥/찰현미밥 전주식콩나물해장국 돈육간장불고기 깐풍연근 연두부*달래양념장 봄...</td>
+      <td>흑미밥 열무된장국 장어강정*데리야끼소스 깻잎쌈*생강채 오이선 포기김치</td>
+      <td>1145.0</td>
+      <td>502.0</td>
+      <td>1</td>
+      <td>25</td>
+      <td>2396.0</td>
+    </tr>
+    <tr>
+      <th>1204</th>
+      <td>2021-01-26</td>
+      <td>2</td>
+      <td>2983</td>
+      <td>69</td>
+      <td>183</td>
+      <td>551</td>
+      <td>362.0</td>
+      <td>모닝롤/야채샌드 우유/주스 계란후라이/찐계란 참치죽/흑미밥 홍합탕 애호박새우젓볶음 ...</td>
+      <td>쌀밥/귀리밥/찰현미밥 들깨미역국 교촌간장치킨 옥수수콘치즈구이 가지고추장무침 포기김치...</td>
+      <td>(New)할라피뇨멸치주먹밥 잔치국수 수제고기육전 쑥갓나물 양파초절임 깍두기</td>
+      <td>1015.0</td>
+      <td>480.0</td>
+      <td>1</td>
+      <td>26</td>
+      <td>2369.0</td>
+    </tr>
+  </tbody>
+</table>
+<p>1162 rows × 15 columns</p>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-05505156-f0cc-46e2-9a25-1bfd0ab0318c')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-05505156-f0cc-46e2-9a25-1bfd0ab0318c button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-05505156-f0cc-46e2-9a25-1bfd0ab0318c');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+
+
+
+
+
+```python
+features = features[:-1]
+features
+```
+
+
+
+
+    ['요일', '월', '일', '현재원', '본사휴가자수', '본사출장자수', '본사시간외근무명령서승인건수', '현본사소속재택근무자수']
+
+
+
+
+```python
+X = train[features]
+y = train['중식계']
+
+from sklearn.ensemble import RandomForestRegressor
+
+lunch_model = RandomForestRegressor()
+
+lunch_model.fit(X, y)
+
+lunch_count_predict = lunch_model.predict(test[features])
+```
+
+
+```python
+plt.plot(lunch_count_predict)
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_79_0.png)
+    
+
+
+#### a)랜덤포레스트 모델 시각화
+
+
+```python
+lunch_model.estimators_
+```
+
+
+
+
+    [DecisionTreeRegressor(max_features='auto', random_state=1325487982),
+     DecisionTreeRegressor(max_features='auto', random_state=1677563506),
+     DecisionTreeRegressor(max_features='auto', random_state=1933075489),
+     DecisionTreeRegressor(max_features='auto', random_state=1349297102),
+     DecisionTreeRegressor(max_features='auto', random_state=1343158210),
+     DecisionTreeRegressor(max_features='auto', random_state=76098785),
+     DecisionTreeRegressor(max_features='auto', random_state=1468009063),
+     DecisionTreeRegressor(max_features='auto', random_state=962580970),
+     DecisionTreeRegressor(max_features='auto', random_state=908737234),
+     DecisionTreeRegressor(max_features='auto', random_state=889740536),
+     DecisionTreeRegressor(max_features='auto', random_state=1849296464),
+     DecisionTreeRegressor(max_features='auto', random_state=1710025050),
+     DecisionTreeRegressor(max_features='auto', random_state=1732874116),
+     DecisionTreeRegressor(max_features='auto', random_state=1661564536),
+     DecisionTreeRegressor(max_features='auto', random_state=1423277704),
+     DecisionTreeRegressor(max_features='auto', random_state=1763840642),
+     DecisionTreeRegressor(max_features='auto', random_state=306209464),
+     DecisionTreeRegressor(max_features='auto', random_state=1844771677),
+     DecisionTreeRegressor(max_features='auto', random_state=473324325),
+     DecisionTreeRegressor(max_features='auto', random_state=1324181795),
+     DecisionTreeRegressor(max_features='auto', random_state=89454058),
+     DecisionTreeRegressor(max_features='auto', random_state=435858906),
+     DecisionTreeRegressor(max_features='auto', random_state=9878292),
+     DecisionTreeRegressor(max_features='auto', random_state=403298820),
+     DecisionTreeRegressor(max_features='auto', random_state=686533899),
+     DecisionTreeRegressor(max_features='auto', random_state=378795383),
+     DecisionTreeRegressor(max_features='auto', random_state=190352224),
+     DecisionTreeRegressor(max_features='auto', random_state=1501469169),
+     DecisionTreeRegressor(max_features='auto', random_state=1600218635),
+     DecisionTreeRegressor(max_features='auto', random_state=2143745969),
+     DecisionTreeRegressor(max_features='auto', random_state=331233946),
+     DecisionTreeRegressor(max_features='auto', random_state=484845401),
+     DecisionTreeRegressor(max_features='auto', random_state=1266825998),
+     DecisionTreeRegressor(max_features='auto', random_state=1778060066),
+     DecisionTreeRegressor(max_features='auto', random_state=263405515),
+     DecisionTreeRegressor(max_features='auto', random_state=1515819180),
+     DecisionTreeRegressor(max_features='auto', random_state=2101550837),
+     DecisionTreeRegressor(max_features='auto', random_state=256733582),
+     DecisionTreeRegressor(max_features='auto', random_state=655739386),
+     DecisionTreeRegressor(max_features='auto', random_state=348824972),
+     DecisionTreeRegressor(max_features='auto', random_state=414339875),
+     DecisionTreeRegressor(max_features='auto', random_state=1816697652),
+     DecisionTreeRegressor(max_features='auto', random_state=1070228370),
+     DecisionTreeRegressor(max_features='auto', random_state=1587048175),
+     DecisionTreeRegressor(max_features='auto', random_state=355380095),
+     DecisionTreeRegressor(max_features='auto', random_state=1319557798),
+     DecisionTreeRegressor(max_features='auto', random_state=2084236328),
+     DecisionTreeRegressor(max_features='auto', random_state=1627312577),
+     DecisionTreeRegressor(max_features='auto', random_state=1431675191),
+     DecisionTreeRegressor(max_features='auto', random_state=1602192833),
+     DecisionTreeRegressor(max_features='auto', random_state=225555862),
+     DecisionTreeRegressor(max_features='auto', random_state=2141224951),
+     DecisionTreeRegressor(max_features='auto', random_state=1529357230),
+     DecisionTreeRegressor(max_features='auto', random_state=437972070),
+     DecisionTreeRegressor(max_features='auto', random_state=1262359487),
+     DecisionTreeRegressor(max_features='auto', random_state=666731172),
+     DecisionTreeRegressor(max_features='auto', random_state=1311624649),
+     DecisionTreeRegressor(max_features='auto', random_state=563540741),
+     DecisionTreeRegressor(max_features='auto', random_state=1926329771),
+     DecisionTreeRegressor(max_features='auto', random_state=46094313),
+     DecisionTreeRegressor(max_features='auto', random_state=1204867833),
+     DecisionTreeRegressor(max_features='auto', random_state=1934567313),
+     DecisionTreeRegressor(max_features='auto', random_state=1961023391),
+     DecisionTreeRegressor(max_features='auto', random_state=667811528),
+     DecisionTreeRegressor(max_features='auto', random_state=1174915715),
+     DecisionTreeRegressor(max_features='auto', random_state=1225350197),
+     DecisionTreeRegressor(max_features='auto', random_state=193604759),
+     DecisionTreeRegressor(max_features='auto', random_state=1360972288),
+     DecisionTreeRegressor(max_features='auto', random_state=880974933),
+     DecisionTreeRegressor(max_features='auto', random_state=2107428308),
+     DecisionTreeRegressor(max_features='auto', random_state=1974684122),
+     DecisionTreeRegressor(max_features='auto', random_state=77710820),
+     DecisionTreeRegressor(max_features='auto', random_state=1809651218),
+     DecisionTreeRegressor(max_features='auto', random_state=1542046491),
+     DecisionTreeRegressor(max_features='auto', random_state=1589633764),
+     DecisionTreeRegressor(max_features='auto', random_state=1198489352),
+     DecisionTreeRegressor(max_features='auto', random_state=1956503402),
+     DecisionTreeRegressor(max_features='auto', random_state=658535703),
+     DecisionTreeRegressor(max_features='auto', random_state=974204166),
+     DecisionTreeRegressor(max_features='auto', random_state=2031825828),
+     DecisionTreeRegressor(max_features='auto', random_state=1810255226),
+     DecisionTreeRegressor(max_features='auto', random_state=456907109),
+     DecisionTreeRegressor(max_features='auto', random_state=1724087437),
+     DecisionTreeRegressor(max_features='auto', random_state=1800483932),
+     DecisionTreeRegressor(max_features='auto', random_state=459410425),
+     DecisionTreeRegressor(max_features='auto', random_state=1845389848),
+     DecisionTreeRegressor(max_features='auto', random_state=839803135),
+     DecisionTreeRegressor(max_features='auto', random_state=1898966281),
+     DecisionTreeRegressor(max_features='auto', random_state=1606056822),
+     DecisionTreeRegressor(max_features='auto', random_state=597879171),
+     DecisionTreeRegressor(max_features='auto', random_state=1546510176),
+     DecisionTreeRegressor(max_features='auto', random_state=1072432316),
+     DecisionTreeRegressor(max_features='auto', random_state=582592348),
+     DecisionTreeRegressor(max_features='auto', random_state=774926991),
+     DecisionTreeRegressor(max_features='auto', random_state=1626218085),
+     DecisionTreeRegressor(max_features='auto', random_state=1088164696),
+     DecisionTreeRegressor(max_features='auto', random_state=1954202047),
+     DecisionTreeRegressor(max_features='auto', random_state=1757536717),
+     DecisionTreeRegressor(max_features='auto', random_state=1856482499),
+     DecisionTreeRegressor(max_features='auto', random_state=309063258)]
+
+
+
+
+```python
+from sklearn.tree import export_graphviz
+
+estimator = lunch_model.estimators_[1]
+
+export_graphviz(estimator, out_file = 'tree.dot',
+                max_depth = 3,
+                precision = 3,
+                filled = True,
+                rounded = True
+                )
+
+from subprocess import call
+
+call(['dot', '-Tpng', 'tree.dot', '-o', 'decision-tree.png', 'Gdpi = 600'])
+
+from IPython.display import Image
+Image(filename = 'decision-tree.png')
+```
+
+
+
+
+    
+![png](220711_dacon_files/220711_dacon_82_0.png)
+    
+
+
+
+### 2)석식계 예측 모델
+
+
+```python
+features
+```
+
+
+
+
+    ['요일', '월', '일', '현재원', '본사휴가자수', '본사출장자수', '본사시간외근무명령서승인건수', '현본사소속재택근무자수']
+
+
+
+
+```python
+features.append('중식계')
+features
+```
+
+
+
+
+    ['요일',
+     '월',
+     '일',
+     '현재원',
+     '본사휴가자수',
+     '본사출장자수',
+     '본사시간외근무명령서승인건수',
+     '현본사소속재택근무자수',
+     '중식계']
+
+
+
+
+```python
+test['중식계'] = lunch_count_predict
+test.head(3)
+```
+
+
+
+
+
+  <div id="df-b7931901-067a-4742-a9a1-9d7981fca20b">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>일자</th>
+      <th>요일</th>
+      <th>본사정원수</th>
+      <th>본사휴가자수</th>
+      <th>본사출장자수</th>
+      <th>본사시간외근무명령서승인건수</th>
+      <th>현본사소속재택근무자수</th>
+      <th>조식메뉴</th>
+      <th>중식메뉴</th>
+      <th>석식메뉴</th>
+      <th>월</th>
+      <th>일</th>
+      <th>현재원</th>
+      <th>중식계</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2021-01-27</td>
+      <td>3</td>
+      <td>2983</td>
+      <td>88</td>
+      <td>182</td>
+      <td>5</td>
+      <td>358.0</td>
+      <td>모닝롤/연유버터베이글 우유/주스 계란후라이/찐계란 단호박죽/흑미밥 우거지국 고기완자...</td>
+      <td>쌀밥/흑미밥/찰현미밥 대구지리 매운돈갈비찜 오꼬노미계란말이 상추무침 포기김치 양상추...</td>
+      <td>흑미밥 얼큰순두부찌개 쇠고기우엉볶음 버섯햄볶음 (New)아삭이고추무절임 포기김치</td>
+      <td>1</td>
+      <td>27</td>
+      <td>2355.0</td>
+      <td>718.87</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2021-01-28</td>
+      <td>4</td>
+      <td>2983</td>
+      <td>104</td>
+      <td>212</td>
+      <td>409</td>
+      <td>348.0</td>
+      <td>모닝롤/대만샌드위치 우유/주스 계란후라이/찐계란 누룽지탕/흑미밥 황태국 시래기지짐 ...</td>
+      <td>쌀밥/보리밥/찰현미밥 우렁된장찌개 오리주물럭 청양부추전 수제삼색무쌈 겉절이김치 양상...</td>
+      <td>충무김밥 우동국물 오징어무침 꽃맛살샐러드 얼갈이쌈장무침 석박지</td>
+      <td>1</td>
+      <td>28</td>
+      <td>2319.0</td>
+      <td>782.05</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2021-01-29</td>
+      <td>5</td>
+      <td>2983</td>
+      <td>270</td>
+      <td>249</td>
+      <td>0</td>
+      <td>294.0</td>
+      <td>모닝롤/핫케익 우유/주스 계란후라이/찐계란 오곡죽/흑미밥 매생이굴국 고구마순볶음 양...</td>
+      <td>쌀밥/흑미밥/찰현미밥 팽이장국 수제돈까스*소스 가자미조림 동초나물무침 포기김치 양상...</td>
+      <td>흑미밥 물만둣국 카레찜닭 숯불양념꼬지어묵 꼬시래기무침 포기김치</td>
+      <td>1</td>
+      <td>29</td>
+      <td>2170.0</td>
+      <td>521.77</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-b7931901-067a-4742-a9a1-9d7981fca20b')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-b7931901-067a-4742-a9a1-9d7981fca20b button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-b7931901-067a-4742-a9a1-9d7981fca20b');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+
+
+
+
+
+```python
+X = train[features]
+y = train['석식계']
+
+dinner_model = RandomForestRegressor()
+
+dinner_model.fit(X, y)
+
+dinner_count_predict = dinner_model.predict(test[features])
+
+plt.plot(dinner_count_predict)
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_87_0.png)
+    
+
+
+
+```python
+submission['중식계'] = lunch_count_predict
+submission['석식계'] = dinner_count_predict
+submission.to_csv('submission.csv', index = False)
+```
+
+## 3.하이퍼파라미터 튜닝하기
+
+### 1)중식계 예측모델
+
+
+```python
+features = features[:-1]
+
+X = train[features]
+y = train['중식계']
+
+lunch_model = RandomForestRegressor(n_estimators = 200, criterion = 'absolute_error')
+
+lunch_model.fit(X, y)
+
+lunch_count_predict = lunch_model.predict(test[features])
+
+plt.plot(lunch_count_predict)
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_91_0.png)
+    
+
+
+### 2)석식계 예측모델
+
+
+```python
+features.append('중식계')
+
+test['중식계'] = lunch_count_predict
+
+X = train[features]
+y = train['석식계']
+
+dinner_model = RandomForestRegressor(n_estimators = 200, criterion = 'absolute_error')
+
+dinner_model.fit(X, y)
+
+dinner_count_predict = dinner_model.predict(test[features])
+
+plt.plot(dinner_count_predict)
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_93_0.png)
+    
+
+
+
+```python
+submission['중식계'] = lunch_count_predict
+submission['석식계'] = dinner_count_predict
+submission.to_csv('submission.csv', index = False)
+```
+
+## 4.텍스트 데이터 사용해보기
+
+
+```python
+train['중식메뉴'].loc[0]
+```
+
+
+
+
+    '쌀밥/잡곡밥 (쌀,현미흑미:국내산) 오징어찌개  쇠불고기 (쇠고기:호주산) 계란찜  청포묵무침  요구르트  포기김치 (배추,고추가루:국내산) '
+
+
+
+
+```python
+def find_something(text:str):
+  if '제육볶음' in text:
+    return True
+  else:
+    return False
+
+x = ['두루치기', 'No 두루치기']
+y = [train[train['중식메뉴'].map(find_something)]['중식계'].mean(), train[~train['중식메뉴'].map(find_something)]['중식계'].mean()]
+
+plt.xlabel('메뉴')
+plt.ylabel('중식계')
+plt.bar(x, y)
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_97_0.png)
+    
+
+
+## 5.SVR 사용해보기
+
+### 1)중식계 예측모델
+
+
+```python
+features = features[:-1]
+features
+```
+
+
+
+
+    ['요일', '월', '일', '현재원', '본사휴가자수', '본사출장자수', '본사시간외근무명령서승인건수', '현본사소속재택근무자수']
+
+
+
+
+```python
+from sklearn import svm
+
+X = train[features]
+y = train['중식계']
+
+lunch_model = svm.SVR()
+
+lunch_model.fit(X, y)
+
+lunch_count_perdict = lunch_model.predict(test[features])
+
+plt.plot(lunch_count_perdict)
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_101_0.png)
+    
+
+
+### 2)석식계 예측모델
+
+
+```python
+features.append('중식계')
+features
+```
+
+
+
+
+    ['요일',
+     '월',
+     '일',
+     '현재원',
+     '본사휴가자수',
+     '본사출장자수',
+     '본사시간외근무명령서승인건수',
+     '현본사소속재택근무자수',
+     '중식계']
+
+
+
+
+```python
+test['중식계'] = lunch_count_perdict
+
+X = train[features]
+y = train['석식계']
+
+dinner_model = svm.SVR()
+
+dinner_model.fit(X, y)
+
+dinner_count_perdict = dinner_model.predict(test[features])
+
+plt.plot(dinner_count_perdict)
+plt.show()
+```
+
+
+    
+![png](220711_dacon_files/220711_dacon_104_0.png)
+    
+
+
+
+```python
+submission['중식계'] = lunch_count_predict
+submission['석식계'] = dinner_count_predict
+submission.to_csv('submission.csv', index = False)
+```
+
+
+```python
+features
+```
+
+
+
+
+    ['요일',
+     '월',
+     '일',
+     '현재원',
+     '본사휴가자수',
+     '본사출장자수',
+     '본사시간외근무명령서승인건수',
+     '현본사소속재택근무자수',
+     '중식계']
+
+
+
+
+
+
+```python
+import seaborn as sns
+sns.distplot(train['요일'])
+```
+
+    /usr/local/lib/python3.7/dist-packages/seaborn/distributions.py:2619: FutureWarning: `distplot` is a deprecated function and will be removed in a future version. Please adapt your code to use either `displot` (a figure-level function with similar flexibility) or `histplot` (an axes-level function for histograms).
+      warnings.warn(msg, FutureWarning)
+    
+
+
+
+
+    <matplotlib.axes._subplots.AxesSubplot at 0x7f06853e2350>
+
+
+
+
+    
+![png](220711_dacon_files/220711_dacon_108_2.png)
+    
+
+
+
+```python
+sns.distplot(train['월'])
+
+```
+
+    /usr/local/lib/python3.7/dist-packages/seaborn/distributions.py:2619: FutureWarning: `distplot` is a deprecated function and will be removed in a future version. Please adapt your code to use either `displot` (a figure-level function with similar flexibility) or `histplot` (an axes-level function for histograms).
+      warnings.warn(msg, FutureWarning)
+    
+
+
+
+
+    <matplotlib.axes._subplots.AxesSubplot at 0x7f0685372b10>
+
+
+
+    /usr/local/lib/python3.7/dist-packages/matplotlib/backends/backend_agg.py:214: RuntimeWarning: Glyph 8722 missing from current font.
+      font.set_text(s, 0.0, flags=flags)
+    /usr/local/lib/python3.7/dist-packages/matplotlib/backends/backend_agg.py:183: RuntimeWarning: Glyph 8722 missing from current font.
+      font.set_text(s, 0, flags=flags)
+    
+
+
+    
+![png](220711_dacon_files/220711_dacon_109_3.png)
+    
+
+
+
+```python
+sns.distplot(train['일'])
+```
+
+    /usr/local/lib/python3.7/dist-packages/seaborn/distributions.py:2619: FutureWarning: `distplot` is a deprecated function and will be removed in a future version. Please adapt your code to use either `displot` (a figure-level function with similar flexibility) or `histplot` (an axes-level function for histograms).
+      warnings.warn(msg, FutureWarning)
+    
+
+
+
+
+    <matplotlib.axes._subplots.AxesSubplot at 0x7f06852f1610>
+
+
+
+
+    
+![png](220711_dacon_files/220711_dacon_110_2.png)
+    
+
+
+
+```python
+sns.distplot(train['현재원'])
+```
+
+    /usr/local/lib/python3.7/dist-packages/seaborn/distributions.py:2619: FutureWarning: `distplot` is a deprecated function and will be removed in a future version. Please adapt your code to use either `displot` (a figure-level function with similar flexibility) or `histplot` (an axes-level function for histograms).
+      warnings.warn(msg, FutureWarning)
+    
+
+
+
+
+    <matplotlib.axes._subplots.AxesSubplot at 0x7f06851cc810>
+
+
+
+
+    
+![png](220711_dacon_files/220711_dacon_111_2.png)
+    
+
+
+
+```python
+sns.distplot(train['본사휴가자수'])
+
+```
+
+    /usr/local/lib/python3.7/dist-packages/seaborn/distributions.py:2619: FutureWarning: `distplot` is a deprecated function and will be removed in a future version. Please adapt your code to use either `displot` (a figure-level function with similar flexibility) or `histplot` (an axes-level function for histograms).
+      warnings.warn(msg, FutureWarning)
+    
+
+
+
+
+    <matplotlib.axes._subplots.AxesSubplot at 0x7f06851f3110>
+
+
+
+
+    
+![png](220711_dacon_files/220711_dacon_112_2.png)
+    
+
+
+
+```python
+sns.distplot(train['본사출장자수'])
+
+```
+
+    /usr/local/lib/python3.7/dist-packages/seaborn/distributions.py:2619: FutureWarning: `distplot` is a deprecated function and will be removed in a future version. Please adapt your code to use either `displot` (a figure-level function with similar flexibility) or `histplot` (an axes-level function for histograms).
+      warnings.warn(msg, FutureWarning)
+    
+
+
+
+
+    <matplotlib.axes._subplots.AxesSubplot at 0x7f0686b0c350>
+
+
+
+
+    
+![png](220711_dacon_files/220711_dacon_113_2.png)
+    
+
+
+
+```python
+sns.distplot(train['본사시간외근무명령서승인건수'])
+```
+
+    /usr/local/lib/python3.7/dist-packages/seaborn/distributions.py:2619: FutureWarning: `distplot` is a deprecated function and will be removed in a future version. Please adapt your code to use either `displot` (a figure-level function with similar flexibility) or `histplot` (an axes-level function for histograms).
+      warnings.warn(msg, FutureWarning)
+    
+
+
+
+
+    <matplotlib.axes._subplots.AxesSubplot at 0x7f068523aa50>
+
+
+
+    /usr/local/lib/python3.7/dist-packages/matplotlib/backends/backend_agg.py:214: RuntimeWarning: Glyph 8722 missing from current font.
+      font.set_text(s, 0.0, flags=flags)
+    /usr/local/lib/python3.7/dist-packages/matplotlib/backends/backend_agg.py:183: RuntimeWarning: Glyph 8722 missing from current font.
+      font.set_text(s, 0, flags=flags)
+    
+
+
+    
+![png](220711_dacon_files/220711_dacon_114_3.png)
+    
+
+
+
+```python
+train['본사휴가자수루트'] = np.sqrt(train['본사휴가자수'])
+train['본사휴가자수루트루트'] = np.sqrt(train['본사휴가자수루트'])
+train['본사휴가자수루트루트루트'] = np.sqrt(train['본사휴가자수루트루트'])
+train['본사휴가자수'] = train['본사휴가자수루트루트루트']
+train.head(3)
+
+```
+
+
+
+
+
+  <div id="df-8ba403cd-4ba5-45a3-9ef6-85a8b3aacf56">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>일자</th>
+      <th>요일</th>
+      <th>본사정원수</th>
+      <th>본사휴가자수</th>
+      <th>본사출장자수</th>
+      <th>본사시간외근무명령서승인건수</th>
+      <th>현본사소속재택근무자수</th>
+      <th>조식메뉴</th>
+      <th>중식메뉴</th>
+      <th>석식메뉴</th>
+      <th>중식계</th>
+      <th>석식계</th>
+      <th>월</th>
+      <th>일</th>
+      <th>현재원</th>
+      <th>본사휴가자수루트</th>
+      <th>본사휴가자수루트루트</th>
+      <th>본사휴가자수루트루트루트</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2016-02-01</td>
+      <td>1</td>
+      <td>2601</td>
+      <td>1.630689</td>
+      <td>150</td>
+      <td>238</td>
+      <td>0.0</td>
+      <td>모닝롤/찐빵  우유/두유/주스 계란후라이  호두죽/쌀밥 (쌀:국내산) 된장찌개  쥐...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 오징어찌개  쇠불고기 (쇠고기:호주산) 계란찜 ...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 육개장  자반고등어구이  두부조림  건파래무침 ...</td>
+      <td>1039.0</td>
+      <td>331.0</td>
+      <td>2</td>
+      <td>1</td>
+      <td>2401.0</td>
+      <td>7.071068</td>
+      <td>2.659148</td>
+      <td>1.630689</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2016-02-02</td>
+      <td>2</td>
+      <td>2601</td>
+      <td>1.630689</td>
+      <td>173</td>
+      <td>319</td>
+      <td>0.0</td>
+      <td>모닝롤/단호박샌드  우유/두유/주스 계란후라이  팥죽/쌀밥 (쌀:국내산) 호박젓국찌...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 김치찌개  가자미튀김  모둠소세지구이  마늘쫑무...</td>
+      <td>콩나물밥*양념장 (쌀,현미흑미:국내산) 어묵국  유산슬 (쇠고기:호주산) 아삭고추무...</td>
+      <td>867.0</td>
+      <td>560.0</td>
+      <td>2</td>
+      <td>2</td>
+      <td>2378.0</td>
+      <td>7.071068</td>
+      <td>2.659148</td>
+      <td>1.630689</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2016-02-03</td>
+      <td>3</td>
+      <td>2601</td>
+      <td>1.653954</td>
+      <td>180</td>
+      <td>111</td>
+      <td>0.0</td>
+      <td>모닝롤/베이글  우유/두유/주스 계란후라이  표고버섯죽/쌀밥 (쌀:국내산) 콩나물국...</td>
+      <td>카레덮밥 (쌀,현미흑미:국내산) 팽이장국  치킨핑거 (닭고기:국내산) 쫄면야채무침 ...</td>
+      <td>쌀밥/잡곡밥 (쌀,현미흑미:국내산) 청국장찌개  황태양념구이 (황태:러시아산) 고기...</td>
+      <td>1017.0</td>
+      <td>573.0</td>
+      <td>2</td>
+      <td>3</td>
+      <td>2365.0</td>
+      <td>7.483315</td>
+      <td>2.735565</td>
+      <td>1.653954</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-8ba403cd-4ba5-45a3-9ef6-85a8b3aacf56')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-8ba403cd-4ba5-45a3-9ef6-85a8b3aacf56 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-8ba403cd-4ba5-45a3-9ef6-85a8b3aacf56');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+
+
+
+
+
+```python
+
+```
+
+
+```python
+
+```
