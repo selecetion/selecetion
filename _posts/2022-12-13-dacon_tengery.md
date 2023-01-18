@@ -78,6 +78,7 @@ excerpt_separator: <!--more-->
 
   </style>
 </head>
+
 2022년 12월 12일~14일까지 진행됐던 데이콘공모전 입니다.<!--more-->
 
 # 모듈부르기
