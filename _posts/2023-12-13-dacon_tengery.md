@@ -1,7 +1,7 @@
 ---
 ---
 layout: post
-title:  "감귤 착과량 예측 경진대회"
+title:  "Dacon 감귤 착과량 예측 경진대회"
 author: "ChanHo"
 comments: true
 tags: Tale
