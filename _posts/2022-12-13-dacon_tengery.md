@@ -1,4 +1,4 @@
----
+
 ---
 layout: post
 title:  "감귤 착과량 예측 경진대회"
@@ -7,7 +7,7 @@ comments: true
 tags: Tale
 excerpt_separator: <!--more-->
 ---
----
+
 
 <head>
   <style>
