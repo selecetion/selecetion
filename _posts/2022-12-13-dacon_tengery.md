@@ -1,4 +1,3 @@
-
 ---
 layout: post
 title: "Dacon 감귤 착과량 예측 경진대회"
