@@ -1,10 +1,10 @@
 ---
-layout: single
-title:  "jupyter notebook 변환하기!"
-categories: coding
-tag: [python, blog, jekyll]
-toc: true
-author_profile: false
+layout: post
+title:  "CNN, Convoultion Neural Network"
+author: "ChanHo"
+comments: true
+tags: Tale
+excerpt_separator: <!--more-->
 ---
 
 <head>
